@@ -1,0 +1,33 @@
+<div class='container'>
+  <div class='row'>
+    <div class='col s6 offset-s3'>
+      <div class='row'>
+        <div class='col s12'>
+          <div class='card'>
+            <div class='card-content'>
+              <div class='card-title'>Post Detail</div>
+              {{#link-to 'edit-post' model.id class='edit'}}
+                Edit
+              {{/link-to}}
+
+              <div class='title'>
+                <label>Title:</label>
+                <span>{{model.title}}</span>
+              </div>
+              <div class='author-name'>
+                <label>Author:</label>
+                <span>{{model.author.name}}</span>
+              </div>
+
+              <div class='tags'>
+                <label>Tags:</label>
+                <span>{{model.tagNames}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

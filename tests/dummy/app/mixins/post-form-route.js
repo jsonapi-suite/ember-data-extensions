@@ -1,0 +1,27 @@
+import Ember from 'ember';
+
+export default Ember.Mixin.create({
+  renderTemplate(controller, model) {
+    this.render('post-form', {
+      controller: 'post-form',
+      model: model
+    });
+  },
+
+  actions: {
+    submit(model) {
+      model.save({ adapterOptions: { relationships: { 'tags': {}, 'author': {} }}}).then((m) => {
+        this.transitionTo('post', m.id);
+      });
+    },
+
+    addTag(model) {
+      let tag = this.store.createRecord('tag');
+      model.get('tags').pushObject(tag);
+    },
+
+    removeTag(model, tag) {
+      tag.markForDeletion();
+    }
+  }
+});

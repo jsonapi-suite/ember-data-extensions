@@ -1,0 +1,43 @@
+<div class='container'>
+  <div class='row'>
+    <div class='col s6 offset-s3'>
+
+      <div class='row'>
+        <div class='col s12'>
+          <div class='card'>
+            <div class='card-content'>
+              <div class='card-title'>New Post</div>
+
+              <form {{action 'submit' model on='submit'}}>
+                <div class='input-field title'>
+                  {{input id='title' type='text' value=model.title placeholder='Title'}}
+                </div>
+
+                <div class='author-name'>
+                  {{input type='text' value=model.author.name placeholder='Author Name'}}
+                </div>
+
+                <div class='tags'>
+                  <a class='add-tag' href='' {{action 'addTag' model}}>Add Tag</a>
+                  <ul>
+                    {{#each tags as |tag|}}
+                      <li class='tag clearfix'>
+                        {{input class='col s7' type='text' value=tag.name placeholder='Enter Tag Name'}}
+                        <a class='col s3' href='' {{action 'removeTag' model tag}}>x</a>
+                      </li>
+                    {{/each}}
+                  </ul>
+                </div>
+
+                <div class='clearfix'>
+                  <button class='right waves-effect waves-light btn' type='submit'>Submit</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

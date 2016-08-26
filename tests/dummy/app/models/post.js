@@ -1,0 +1,14 @@
+import Ember from 'ember';
+import DS from 'ember-data';
+import ModelMixin from 'ember-data-extensions/mixins/model';
+
+export default DS.Model.extend(ModelMixin, {
+  title: DS.attr('string'),
+
+  author: DS.belongsTo('author'),
+  tags: DS.hasMany('tag'),
+
+  tagNames: Ember.computed('tags.@each.name', function() {
+    return this.get('tags').mapBy('name').join(', ');
+  })
+});
