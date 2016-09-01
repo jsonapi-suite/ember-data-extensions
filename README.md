@@ -8,4 +8,4 @@ View [official documentation](https://bbgithub.dev.bloomberg.com/pages/Infrastru
 
 Run the dummy app to see nested forms in action. The following `Post` has an `Author` and many `Tags`:
 
-<img src="https://bbgithub.dev.bloomberg.com/storage/user/3/files/af70f08e-7026-11e6-8c18-f26e2d1a27c5" style="width: 100px;height:100px" />
+<img src="https://bbgithub.dev.bloomberg.com/storage/user/3/files/af70f08e-7026-11e6-8c18-f26e2d1a27c5" width="300px"/>
