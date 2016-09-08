@@ -1,18 +1,13 @@
 import Ember from 'ember';
 
-const resetRelations = function(record, relationshipsDirective) {
-  record.eachRelationship((relationName, meta) => {
-    if (meta.kind === 'hasMany') {
-      if (relationshipsDirective.hasOwnProperty(relationName)) {
-        let filtered = record.get(relationName).filter((r) => {
-          return r.get('isNew') ||
-            r.get('markedForDestruction') ||
-            r.get('markedForDeletion');
-        });
-        record.get(relationName).removeObjects(filtered);
-      }
+const resetRelations = function(record) {
+  record.get('__recordsJustSaved').forEach((r) => {
+    let shouldUnload = r.get('isNew') || r.get('markedForDestruction') || r.get('markedForDeletion');
+    if (shouldUnload) {
+      r.unloadRecord();
     }
   });
+  record.set('__recordsJustSaved', []);
 };
 
 const defaultOptions = function(options) {
@@ -49,12 +44,7 @@ export default Ember.Mixin.create({
   save(options = {}) {
     defaultOptions(options);
     let promise = this._super(...arguments);
-
-    let directive = options.adapterOptions.relationships;
-    promise.then((record) => {
-      resetRelations(record, directive);
-    });
-
+    promise.then(resetRelations);
     return promise;
   }
 });

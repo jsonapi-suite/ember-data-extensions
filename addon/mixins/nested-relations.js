@@ -1,5 +1,12 @@
 import Ember from 'ember';
 
+// This is for reference in our post-save promise
+// We need to unload these records after save, otherwise
+// we will be left with 2 of the same object - one persisted
+// and one not.
+// This is only required for hasMany's
+let savedRecords = [];
+
 const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach((relationName) => {
     let subRelations = relations[relationName];
@@ -71,6 +78,7 @@ const hasManyData = function(relatedRecords, subRelations) {
     let payload = jsonapiPayload(relatedRecord);
     processRelationships(subRelations, payload, relatedRecord);
     payloads.push(payload);
+    savedRecords.push(relatedRecord);
   });
   return { data: payloads };
 };
@@ -131,6 +139,7 @@ const relationshipsDirective = function(value) {
 
 export default Ember.Mixin.create({
   serialize(snapshot/*, options */) {
+    savedRecords = [];
     let json = this._super(...arguments);
     delete(json.data.relationships);
     delete(json.data.attributes);
@@ -152,6 +161,7 @@ export default Ember.Mixin.create({
 
     let relationships = relationshipsDirective(adapterOptions.relationships);
     processRelationships(relationships, json.data, snapshot.record);
+    snapshot.record.set('__recordsJustSaved', savedRecords);
     console.log('serialized', json);
     return json;
   }

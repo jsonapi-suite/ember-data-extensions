@@ -19,6 +19,8 @@ test('creating a record with nested relations', function(assert) {
   andThen(function() {
     assert.equal(detailPage.title, 'my post', 'saves basic attributes correctly');
     assert.equal(detailPage.tagList, 'new tag 1, new tag 2', 'saves one-to-many correctly');
+    assert.equal(detailPage.tagIds, '1, 2', 'maintains one-to-many ids correctly');
     assert.equal(detailPage.authorName, 'John Doe', 'saves one-to-one correctly');
+    assert.equal(detailPage.authorId, '1', 'maintains one-to-one ids correctly');
   });
 });

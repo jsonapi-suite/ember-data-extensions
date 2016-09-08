@@ -10,5 +10,9 @@ export default DS.Model.extend(ModelMixin, {
 
   tagNames: Ember.computed('tags.@each.name', function() {
     return this.get('tags').mapBy('name').join(', ');
+  }),
+
+  tagIds: Ember.computed('tags.@each.name', function() {
+    return this.get('tags').mapBy('id').join(', ');
   })
 });
