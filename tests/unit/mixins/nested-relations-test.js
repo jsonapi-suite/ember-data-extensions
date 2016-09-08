@@ -293,6 +293,7 @@ test('it serializes one-to-many correctly', function(assert) {
   assert.deepEqual(json, expectedJSON, 'has correct json');
 });
 
+// note tag 2 does not pass attributes
 test('one-to-many deletion/destruction', function(assert) {
   seedPostWithTags();
   let post = store.peekRecord('post', 1);
@@ -306,6 +307,7 @@ test('one-to-many deletion/destruction', function(assert) {
       relationships: {
         tags: {
           data: [
+            { type: 'tags', id: '2' },
             { type: 'tags', id: '3', attributes: { _delete: true } },
             { type: 'tags', id: '4', attributes: { _destroy: true } },
           ]
@@ -328,7 +330,7 @@ test('relationship specified but not present', function(assert) {
   assert.deepEqual(json, expectedJSON, 'it does not blow up');
 });
 
-test('does not serialize non-dirty relations', function(assert) {
+test('does not serialize attributes of non-dirty relations', function(assert) {
   store.pushPayload({
     data: {
       id: '1',
@@ -376,6 +378,12 @@ test('does not serialize non-dirty relations', function(assert) {
       id: '1',
       type: 'posts',
       relationships: {
+        author: {
+          data: {
+            id: '99',
+            type: 'authors'
+          }
+        },
         genre: {
           data: {
             type: 'genres',
@@ -386,6 +394,7 @@ test('does not serialize non-dirty relations', function(assert) {
         tags: {
           data: [
             { type: 'tags', id: '2', attributes: { name: 'tag1 change' } },
+            { type: 'tags', id: '3' },
             { type: 'tags', attributes: { name: 'new tag' } }
           ]
         }

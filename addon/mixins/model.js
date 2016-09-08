@@ -1,11 +1,16 @@
 import Ember from 'ember';
 
-const resetRelations = function(record) {
+const resetRelations = function(record, relationshipsDirective) {
   record.eachRelationship((relationName, meta) => {
     if (meta.kind === 'hasMany') {
-      record.set(relationName, Ember.A());
-    } else {
-      record.set(relationName, null);
+      if (relationshipsDirective.hasOwnProperty(relationName)) {
+        let filtered = record.get(relationName).filter((r) => {
+          return r.get('isNew') ||
+            r.get('markedForDestruction') ||
+            r.get('markedForDeletion');
+        });
+        record.get(relationName).removeObjects(filtered);
+      }
     }
   });
 };
@@ -45,9 +50,10 @@ export default Ember.Mixin.create({
     defaultOptions(options);
     let promise = this._super(...arguments);
 
-    if (options.resetRelations) {
-      promise.then(resetRelations);
-    }
+    let directive = options.adapterOptions.relationships;
+    promise.then((record) => {
+      resetRelations(record, directive);
+    });
 
     return promise;
   }

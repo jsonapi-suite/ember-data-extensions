@@ -12,8 +12,13 @@ const Author = DS.Model.extend(ModelMixin, {
 });
 
 const Post = DS.Model.extend(ModelMixin, {
-  title: DS.attr('string'),
-  author: DS.belongsTo({ async: false })
+  title:  DS.attr('string'),
+  author: DS.belongsTo({ async: false }),
+  tags:  DS.hasMany({ async: true })
+});
+
+const Tag = DS.Model.extend(ModelMixin, {
+  name: DS.attr('string')
 });
 
 moduleForAcceptance('Unit | Mixin | model', {
@@ -22,6 +27,7 @@ moduleForAcceptance('Unit | Mixin | model', {
     store = getOwner(this).lookup('service:store');
     getOwner(this).register('model:post', Post);
     getOwner(this).register('model:author', Author);
+    getOwner(this).register('model:tag', Tag);
   }
 });
 
@@ -54,29 +60,65 @@ test('#hasDirtyAttributes', function(assert) {
   });
 });
 
-test('#save when resetRelations: false', function(assert) {
-  Ember.run(() => {
-    let author = store.createRecord('author', { name: 'Joe Author' });
-    let post = store.createRecord('post', { title: 'title', author: author });
+// note tag with id 3 does not send attributes
+test('resetting relations when only sending dirty relations', function(assert) {
+  let done = assert.async();
+  server.patch('/posts/:id', (db, request) => {
+    let relationships = JSON.parse(request.requestBody).data.relationships;
+    assert.deepEqual(relationships, {
+      tags: {
+        data: [
+          {
+            id: '2',
+            type: 'tags',
+            attributes: { name: 'tag1 changed' }
+          },
+          {
+            id: '3',
+            type: 'tags'
+          }
+        ]
+      }
+    });
+    done();
+    let post = db.posts.find(request.params.id);
+    post.tags.models[0].update({ name: 'tag1 changed' });
+    return post;
+  });
 
-    let done = assert.async();
-    post.save({ resetRelations: false }).then((p) => {
-      assert.equal(p.get('author'), author);
-      done();
+  let post = server.create('post');
+  post.createTag({ name: 'tag1' });
+  post.createTag({ name: 'tag2' });
+  Ember.run(() => {
+    store.pushPayload({
+      data: {
+        type: 'posts',
+        id: 1,
+        relationships: {
+          tags: {
+            data: [
+              { type: 'tags', id: '2' },
+              { type: 'tags', id: '3' }
+            ]
+          }
+        }
+      },
+      included: [
+        { type: 'tags', id: '2', attributes: { name: 'tag1' } },
+        { type: 'tags', id: '3', attributes: { name: 'tag2' } }
+      ]
     });
   });
-});
 
-test('#save when resetRelations: true', function(assert) {
+  post = store.peekRecord('post', 1);
+  assert.equal(post.get('tags.length'), 2);
+  post.set('tags.firstObject.name', 'tag1 changed');
+
+  let done2 = assert.async();
   Ember.run(() => {
-    let author = store.createRecord('author', { name: 'Joe Author' });
-    let post = store.createRecord('post', { title: 'title', author: author });
-
-    let done = assert.async();
-    post.save().then((p) => {
-      let author = p.get('author');
-      assert.equal(author, null);
-      done();
+    post.save({ adapterOptions: { relationships: 'tags' } }).then((p) => {
+      assert.equal(p.get('tags.length'), 2);
+      done2();
     });
   });
 });

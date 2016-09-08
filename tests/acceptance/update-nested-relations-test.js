@@ -5,9 +5,6 @@ import detailPage from 'dummy/tests/pages/show-post';
 
 moduleForAcceptance('Acceptance | update nested relations');
 
-// Todo test ideally
-// * delete
-// * disassociate
 test('updating nested relations', function(assert) {
   let author = server.create('author', { name: 'Joe Author' });
   let tag1 = server.create('tag', { name: 'tag1' });
@@ -37,6 +34,26 @@ test('updating nested relations', function(assert) {
       assert.equal(post.author.id, author.id, 'updates existing author');
       assert.equal(detailPage.authorName, 'new author', 'updates author name');
       assert.equal(detailPage.tagList, 'tag1, tag2 changed, new tag', 'updates one-to-many correctly');
+    });
+  });
+});
+
+test('updating only one member of a hasMany relation', function(assert) {
+  server.foo = 'bar';
+  let tag1 = server.create('tag', { name: 'tag1' });
+  let tag2 = server.create('tag', { name: 'tag2' });
+  let post = server.create('post', {
+    tags: [tag1, tag2],
+  });
+  visit(`/posts/${post.id}/edit`);
+
+  andThen(function() {
+    assert.equal(page.tags().count, 2);
+    page.tags(0).setName('tag1 changed');
+    page.submit();
+
+    andThen(function() {
+      assert.equal(detailPage.tagList, 'tag1 changed, tag2');
     });
   });
 });

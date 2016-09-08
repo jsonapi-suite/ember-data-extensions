@@ -68,21 +68,17 @@ const jsonapiPayload = function(record) {
 const hasManyData = function(relatedRecords, subRelations) {
   let payloads = [];
   relatedRecords.forEach((relatedRecord) => {
-    if (relatedRecord.get('hasDirtyAttributes')) {
-      let payload = jsonapiPayload(relatedRecord);
-      processRelationships(subRelations, payload, relatedRecord);
-      payloads.push(payload);
-    }
+    let payload = jsonapiPayload(relatedRecord);
+    processRelationships(subRelations, payload, relatedRecord);
+    payloads.push(payload);
   });
   return { data: payloads };
 };
 
 const belongsToData = function(relatedRecord, subRelations) {
-  if (isPresentObject(subRelations) || relatedRecord.get('hasDirtyAttributes')) {
-    let payload = jsonapiPayload(relatedRecord);
-    processRelationships(subRelations, payload, relatedRecord);
-    return { data: payload };
-  }
+  let payload = jsonapiPayload(relatedRecord);
+  processRelationships(subRelations, payload, relatedRecord);
+  return { data: payload };
 };
 
 const processRelationship = function(kind, relationData, subRelations, callback) {
