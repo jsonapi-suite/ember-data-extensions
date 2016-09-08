@@ -1,11 +1,18 @@
 import Ember from 'ember';
 
 const resetRelations = function(record) {
-  record.get('__recordsJustSaved').forEach((r) => {
-    let shouldUnload = r.get('isNew') || r.get('markedForDestruction') || r.get('markedForDeletion');
-    if (shouldUnload) {
-      r.unloadRecord();
-    }
+  Object.keys(record.get('__recordsJustSaved')).forEach((relationName) => {
+    let relationRecords = record.get('__recordsJustSaved')[relationName];
+
+    relationRecords.forEach((r) => {
+      let shouldUnload = r.get('isNew') || r.get('markedForDestruction');
+      if (shouldUnload) {
+        r.unloadRecord();
+      } else if (r.get('markedForDeletion')) {
+        record.get(relationName).removeObject(r);
+        r.set('markedForDeletion', false);
+      }
+    });
   });
   record.set('__recordsJustSaved', []);
 };

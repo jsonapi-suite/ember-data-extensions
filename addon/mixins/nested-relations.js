@@ -5,7 +5,7 @@ import Ember from 'ember';
 // we will be left with 2 of the same object - one persisted
 // and one not.
 // This is only required for hasMany's
-let savedRecords = [];
+let savedRecords = {};
 
 const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach((relationName) => {
@@ -72,13 +72,14 @@ const jsonapiPayload = function(record) {
   return payload;
 };
 
-const hasManyData = function(relatedRecords, subRelations) {
+const hasManyData = function(relationName, relatedRecords, subRelations) {
   let payloads = [];
+  savedRecords[relationName] = [];
   relatedRecords.forEach((relatedRecord) => {
     let payload = jsonapiPayload(relatedRecord);
     processRelationships(subRelations, payload, relatedRecord);
     payloads.push(payload);
-    savedRecords.push(relatedRecord);
+    savedRecords[relationName].push(relatedRecord);
   });
   return { data: payloads };
 };
@@ -89,11 +90,11 @@ const belongsToData = function(relatedRecord, subRelations) {
   return { data: payload };
 };
 
-const processRelationship = function(kind, relationData, subRelations, callback) {
+const processRelationship = function(name, kind, relationData, subRelations, callback) {
   let payload = null;
 
   if (kind === 'hasMany') {
-    payload = hasManyData(relationData, subRelations);
+    payload = hasManyData(name, relationData, subRelations);
   } else {
     payload = belongsToData(relationData, subRelations);
   }
@@ -108,7 +109,7 @@ const processRelationships = function(relationshipHash, jsonData, record) {
     jsonData.relationships = {};
 
     iterateRelations(record, relationshipHash, (name, kind, related, subRelations) => {
-      processRelationship(kind, related, subRelations, (payload) => {
+      processRelationship(name, kind, related, subRelations, (payload) => {
         jsonData.relationships[name] = payload;
       });
     });
