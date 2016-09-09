@@ -50,16 +50,10 @@ const attributesFor = function(record) {
   return attrs;
 };
 
-const jsonapiType = function(record) {
-  return record.store
-    .adapterFor(record.constructor.modelName)
-    .pathForType(record.constructor.modelName);
-};
-
 const jsonapiPayload = function(record) {
   let attributes = attributesFor(record);
 
-  let payload = { type: jsonapiType(record) };
+  let payload = { type: record.jsonapiType() };
 
   if (isPresentObject(attributes)) {
     payload.attributes = attributes;

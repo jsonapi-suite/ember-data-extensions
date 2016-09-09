@@ -45,6 +45,12 @@ export default Ember.Mixin.create({
     this.set('_markedForDestruction', true);
   },
 
+  jsonapiType() {
+    return this.store
+      .adapterFor(this.constructor.modelName)
+      .pathForType(this.constructor.modelName);
+  },
+
   // Blank out all relations after saving
   // We will use the server response includes to 'reset'
   // these relations
