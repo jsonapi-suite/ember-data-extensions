@@ -104,7 +104,9 @@ const processRelationships = function(relationshipHash, jsonData, record) {
 
     iterateRelations(record, relationshipHash, (name, kind, related, subRelations) => {
       processRelationship(name, kind, related, subRelations, (payload) => {
-        jsonData.relationships[name] = payload;
+        let serializer = record.store.serializerFor(record.constructor.modelName);
+        let serializedName = serializer.keyForRelationship(name);
+        jsonData.relationships[serializedName] = payload;
       });
     });
   }
@@ -136,28 +138,31 @@ export default Ember.Mixin.create({
   serialize(snapshot/*, options */) {
     savedRecords = [];
     let json = this._super(...arguments);
-    delete(json.data.relationships);
-    delete(json.data.attributes);
 
-    let adapterOptions = snapshot.adapterOptions || {};
-
-    let attributes = attributesFor(snapshot.record);
-    if (isPresentObject(attributes)) {
-      json.data.attributes = attributes;
-    }
-
-    if (snapshot.record.id) {
-      json.data.id = snapshot.record.id.toString();
-    }
-
-    if (adapterOptions.attributes === false) {
+    if (snapshot.record.get('emberDataExtensions') !== false) {
+      delete(json.data.relationships);
       delete(json.data.attributes);
+
+      let adapterOptions = snapshot.adapterOptions || {};
+
+      let attributes = attributesFor(snapshot.record);
+      if (isPresentObject(attributes)) {
+        json.data.attributes = attributes;
+      }
+
+      if (snapshot.record.id) {
+        json.data.id = snapshot.record.id.toString();
+      }
+
+      if (adapterOptions.attributes === false) {
+        delete(json.data.attributes);
+      }
+
+      let relationships = relationshipsDirective(adapterOptions.relationships);
+      processRelationships(relationships, json.data, snapshot.record);
+      snapshot.record.set('__recordsJustSaved', savedRecords);
     }
 
-    let relationships = relationshipsDirective(adapterOptions.relationships);
-    processRelationships(relationships, json.data, snapshot.record);
-    snapshot.record.set('__recordsJustSaved', savedRecords);
-    console.log('serialized', json);
     return json;
   }
 });
