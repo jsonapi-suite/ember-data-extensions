@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Ember-data-extensions by jsonapi-suite</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Ember-data-extensions</h1>
+        <p></p>
+
+        <p class="view"><a href="https://github.com/jsonapi-suite/ember-data-extensions">View the Project on GitHub <small>jsonapi-suite/ember-data-extensions</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/jsonapi-suite/ember-data-extensions/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/jsonapi-suite/ember-data-extensions/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/jsonapi-suite/ember-data-extensions">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a id="ember-data-extensions" class="anchor" href="#ember-data-extensions" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Ember-Data Extensions</h1>
+
+<p>This is a collection of additions/alterations to ember-data to A) add convenience helpers and B) provide functionality not part of the default gem.</p>
+
+<h3>
+<a id="nested-relations" class="anchor" href="#nested-relations" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Nested Relations</h3>
+
+<p>You can now save full nested relation objects, specifying the relations during <code>save()</code>:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">post</span>.<span class="pl-en">save</span>({
+  adapterOptions<span class="pl-k">:</span> {
+    relationships<span class="pl-k">:</span> [<span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, { author<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>state<span class="pl-pds">'</span></span> }]
+  }
+});</pre></div>
+
+<p>The above would send the following JSONAPI payload to the server:</p>
+
+<div class="highlight highlight-source-js"><pre>{
+  data<span class="pl-k">:</span> {
+    type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>posts<span class="pl-pds">'</span></span>,
+    relationships<span class="pl-k">:</span> {
+      tags<span class="pl-k">:</span> {
+        data<span class="pl-k">:</span> [
+          { type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, attributes<span class="pl-k">:</span> { name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>important<span class="pl-pds">'</span></span> } },
+          { type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, id<span class="pl-k">:</span> <span class="pl-c1">123</span> }
+        ]
+      },
+      author<span class="pl-k">:</span> {
+        data<span class="pl-k">:</span> {
+          type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>authors<span class="pl-pds">'</span></span>,
+          attributes<span class="pl-k">:</span> { name<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>Joe Author<span class="pl-pds">'</span></span> },
+          relationships<span class="pl-k">:</span> {
+            state<span class="pl-k">:</span> {
+              data<span class="pl-k">:</span> {
+                type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>states<span class="pl-pds">'</span></span>,
+                id<span class="pl-k">:</span> <span class="pl-c1">456</span>
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}</pre></div>
+
+<p>You can disassociate an associated object by using <code>markForDeletion</code>. This will send a <code>_delete</code> attribute to the server:</p>
+
+<div class="highlight highlight-source-js"><pre><span class="pl-smi">post</span>.<span class="pl-c1">get</span>(<span class="pl-s"><span class="pl-pds">'</span>tags.firstObject<span class="pl-pds">'</span></span>).<span class="pl-en">markForDestruction</span>();
+<span class="pl-smi">post</span>.<span class="pl-en">save</span>({ relationships<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span> });</pre></div>
+
+<p>Sends:</p>
+
+<div class="highlight highlight-source-js"><pre>{
+  data<span class="pl-k">:</span> {
+    type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>posts<span class="pl-pds">'</span></span>,
+    relationships<span class="pl-k">:</span> {
+      tags<span class="pl-k">:</span> {
+        data<span class="pl-k">:</span> {
+          type<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>,
+          id<span class="pl-k">:</span> <span class="pl-s"><span class="pl-pds">'</span>123<span class="pl-pds">'</span></span>,
+          attributes<span class="pl-k">:</span> { _delete<span class="pl-k">:</span> <span class="pl-c1">true</span> }
+        }
+      }
+    }
+  }
+}</pre></div>
+
+<p>If you want to destroy the associated record as well, use <code>markForDestruction</code> instead. This will send <code>_destroy: true</code> instead of <code>_delete: true</code>.</p>
+
+<h3>
+<a id="dirty-properties" class="anchor" href="#dirty-properties" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Dirty Properties</h3>
+
+<p>If an object is not dirty, we will only send its resource identifier (<code>id</code>/<code>type</code>) to the server (not the ember-data behavior). This is to solve a concurrency issue. Consider two users load the same <code>post</code> form, where user A edits the title and user B edits the description. User A submits the form first, then user B submits. User B would overwrite the title user A entered, even though they didn't change anything.</p>
+
+<p>Since we only send dirty attributes to the server, this issue is mitigated as much as possible.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/jsonapi-suite">jsonapi-suite</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
