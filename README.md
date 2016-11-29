@@ -2,7 +2,7 @@
 
 This is a collection of helpers/customizations to ember-data to make it work for our use cases.
 
-View [official documentation](https://bbgithub.dev.bloomberg.com/pages/InfrastructureExperience/ember-data-extensions)
+View [official documentation](http://jsonapi-suite.github.io/ember-data-extensions)
 
 ### Nested Forms
 
