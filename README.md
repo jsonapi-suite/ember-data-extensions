@@ -8,4 +8,4 @@ View [official documentation](http://jsonapi-suite.github.io/ember-data-extensio
 
 Run the dummy app to see nested forms in action. The following `Post` has an `Author` and many `Tags`:
 
-<img src="https://bbgithub.dev.bloomberg.com/storage/user/3/files/af70f08e-7026-11e6-8c18-f26e2d1a27c5" width="300px"/>
+<img src="https://cloud.githubusercontent.com/assets/55264/20713886/01f22314-b618-11e6-9b1f-41dfa8cb61c8.png" width="300px"/>
