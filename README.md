@@ -4,6 +4,10 @@ This is a collection of helpers/customizations to ember-data to make it work for
 
 View [official documentation](http://jsonapi-suite.github.io/ember-data-extensions)
 
+### Installation
+
+`ember install ember-data-jsonapi-extensions`
+
 ### Nested Forms
 
 Run the dummy app to see nested forms in action. The following `Post` has an `Author` and many `Tags`:
