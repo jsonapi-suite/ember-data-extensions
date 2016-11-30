@@ -11,9 +11,13 @@ const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach((relationName) => {
     let subRelations = relations[relationName];
 
-    let kind = record.relationshipFor(relationName).kind;
+    let metadata      = record.relationshipFor(relationName);
+    let kind          = metadata.kind;
     let relatedRecord = record.get(relationName);
-    relatedRecord = relatedRecord.get('content');
+
+    if (metadata.options.async !== false) {
+      relatedRecord = relatedRecord.get('content');
+    }
 
     if (relatedRecord) {
       callback(relationName, kind, relatedRecord, subRelations);
@@ -156,6 +160,16 @@ export default Ember.Mixin.create({
 
       if (adapterOptions.attributes === false) {
         delete(json.data.attributes);
+      }
+
+      if (adapterOptions.attributes) {
+        if (!json.data.attributes) {
+          json.data.attributes = {};
+        }
+
+        Object.keys(adapterOptions.attributes).forEach((k) => {
+          json.data.attributes[k] = adapterOptions.attributes[k];
+        });
       }
 
       let relationships = relationshipsDirective(adapterOptions.relationships);

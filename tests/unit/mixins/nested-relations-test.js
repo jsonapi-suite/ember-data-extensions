@@ -36,6 +36,7 @@ const Post = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
   title: DS.attr('string'),
   genre: DS.belongsTo(),
   author: DS.belongsTo(),
+  asyncFalseAuthor: DS.belongsTo('author', { async: false }),
   tags: DS.hasMany()
 });
 
@@ -195,6 +196,29 @@ test('it serializes one-to-one correctly', function(assert) {
       type: 'posts',
       relationships: {
         author: {
+          data: {
+            type: 'authors',
+            attributes: {
+              name: 'Joe Author'
+            }
+          }
+        }
+      }
+    }
+  };
+  assert.deepEqual(json, expectedJSON, 'has correct json');
+});
+
+test('it serializes async: false relationships correctly', function(assert) {
+  let post = store.createRecord('post', {
+    asyncFalseAuthor: store.createRecord('author', { name: 'Joe Author' })
+  });
+  let json = serialize(post, { attributes: false, relationships: 'asyncFalseAuthor' });
+  let expectedJSON = {
+    data: {
+      type: 'posts',
+      relationships: {
+        'async-false-author': {
           data: {
             type: 'authors',
             attributes: {
