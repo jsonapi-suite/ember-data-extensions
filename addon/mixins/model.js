@@ -45,6 +45,10 @@ export default Ember.Mixin.create({
     this.set('_markedForDestruction', true);
   },
 
+  unmarkForDestruction() {
+    this.set('_markedForDestruction', false);
+  },
+
   jsonapiType() {
     return this.store
       .adapterFor(this.constructor.modelName)
@@ -57,7 +61,9 @@ export default Ember.Mixin.create({
   save(options = {}) {
     defaultOptions(options);
     let promise = this._super(...arguments);
-    promise.then(resetRelations);
+    if (options.resetRelations === true) {
+      promise.then(resetRelations);
+    }
     return promise;
   }
 });
