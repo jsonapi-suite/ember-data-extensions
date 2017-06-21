@@ -40,6 +40,10 @@ export default Ember.Mixin.create({
   markForDeletion() {
     this.set('_markedForDeletion', true);
   },
+  
+  unmarkForDeletion() {
+    this.set('_markedForDeletion', false);
+  },
 
   markForDestruction() {
     this.set('_markedForDestruction', true);
