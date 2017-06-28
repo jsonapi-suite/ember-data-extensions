@@ -47,7 +47,7 @@ const attributesFor = function(record) {
     attrs = { _delete: true };
   }
 
-  if (record.get('markedForDestruction')) {
+  if (!record.get('isNew') && record.get('markedForDestruction')) {
     attrs = { _destroy: true };
   }
 
