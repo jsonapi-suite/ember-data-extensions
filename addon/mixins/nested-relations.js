@@ -11,16 +11,18 @@ const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach((relationName) => {
     let subRelations = relations[relationName];
 
-    let metadata      = record.relationshipFor(relationName);
-    let kind          = metadata.kind;
-    let relatedRecord = record.get(relationName);
+    let metadata          = record.relationshipFor(relationName);
+    let kind              = metadata.kind;
+    let relatedRecord     = record.get(relationName);
+    let manyToManyDeleted = record.manyToManyMarkedForDeletion(relationName);
+
 
     if (metadata.options.async !== false) {
       relatedRecord = relatedRecord.get('content');
     }
 
     if (relatedRecord) {
-      callback(relationName, kind, relatedRecord, subRelations);
+      callback(relationName, kind, relatedRecord, subRelations, manyToManyDeleted);
     }
   });
 };
@@ -29,7 +31,7 @@ const isPresentObject = function(val) {
   return val && Object.keys(val).length > 0;
 };
 
-const attributesFor = function(record) {
+const attributesFor = function(record, isManyToManyDelete) {
   let attrs = {};
 
   let changes = record.changedAttributes();
@@ -43,7 +45,7 @@ const attributesFor = function(record) {
     }
   });
 
-  if (record.get('markedForDeletion')) {
+  if (record.get('markedForDeletion') || isManyToManyDelete) {
     attrs = { _delete: true };
   }
 
@@ -54,8 +56,8 @@ const attributesFor = function(record) {
   return attrs;
 };
 
-const jsonapiPayload = function(record) {
-  let attributes = attributesFor(record);
+const jsonapiPayload = function(record, isManyToManyDelete) {
+  let attributes = attributesFor(record, isManyToManyDelete);
 
   let payload = { type: record.jsonapiType() };
 
@@ -70,11 +72,11 @@ const jsonapiPayload = function(record) {
   return payload;
 };
 
-const hasManyData = function(relationName, relatedRecords, subRelations) {
+const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted) {
   let payloads = [];
   savedRecords[relationName] = [];
   relatedRecords.forEach((relatedRecord) => {
-    let payload = jsonapiPayload(relatedRecord);
+    let payload = jsonapiPayload(relatedRecord, manyToManyDeleted && manyToManyDeleted.includes(relatedRecord));
     processRelationships(subRelations, payload, relatedRecord);
     payloads.push(payload);
     savedRecords[relationName].push(relatedRecord);
@@ -88,11 +90,11 @@ const belongsToData = function(relatedRecord, subRelations) {
   return { data: payload };
 };
 
-const processRelationship = function(name, kind, relationData, subRelations, callback) {
+const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, callback) {
   let payload = null;
 
   if (kind === 'hasMany') {
-    payload = hasManyData(name, relationData, subRelations);
+    payload = hasManyData(name, relationData, subRelations, manyToManyDeleted);
   } else {
     payload = belongsToData(relationData, subRelations);
   }
@@ -106,8 +108,8 @@ const processRelationships = function(relationshipHash, jsonData, record) {
   if (isPresentObject(relationshipHash)) {
     jsonData.relationships = {};
 
-    iterateRelations(record, relationshipHash, (name, kind, related, subRelations) => {
-      processRelationship(name, kind, related, subRelations, (payload) => {
+    iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted) => {
+      processRelationship(name, kind, related, subRelations, manyToManyDeleted, (payload) => {
         let serializer = record.store.serializerFor(record.constructor.modelName);
         let serializedName = serializer.keyForRelationship(name);
         jsonData.relationships[serializedName] = payload;
