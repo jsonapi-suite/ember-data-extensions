@@ -40,7 +40,7 @@ export default Ember.Mixin.create({
   markForDeletion() {
     this.set('_markedForDeletion', true);
   },
-  
+
   unmarkForDeletion() {
     this.set('_markedForDeletion', false);
   },
@@ -52,6 +52,34 @@ export default Ember.Mixin.create({
   unmarkForDestruction() {
     this.set('_markedForDestruction', false);
   },
+
+  markManyToManyDeletion(relation, model) {
+    let deletedRelations = this.get('_manyToManyDeleted');
+    if(!deletedRelations) {
+      this.set('_manyToManyDeleted', Ember.Object.create());
+      deletedRelations = this.get('_manyToManyDeleted');
+    }
+
+    if(!deletedRelations.get(relation)) {
+      deletedRelations.set(relation, Ember.A());
+    }
+
+    if(!deletedRelations.get(relation).includes(model)) {
+      deletedRelations.get(relation).pushObject(model);
+    }
+  },
+
+  manyToManyMarkedForDeletion(relation) {
+    return this.get('_manyToManyDeleted') &&
+            this.get(`_manyToManyDeleted.${relation}`);
+  },
+
+  unmarkManyToManyDeletion(relation, model) {
+    return this.get('_manyToManyDeleted') &&
+            this.get(`_manyToManyDeleted.${relation}`) &&
+            this.get(`_manyToManyDeleted.${relation}`).removeObject(model);
+  },
+
 
   jsonapiType() {
     return this.store
