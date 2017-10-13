@@ -69,7 +69,13 @@ export default Ember.Mixin.create({
     }
   },
 
-  manyToManyMarkedForDeletion(relation) {
+  manyToManyMarkedForDeletion(relation, model) {
+    return this.get('_manyToManyDeleted') &&
+            this.get(`_manyToManyDeleted.${relation}`) && 
+            this.get(`_manyToManyDeleted.${relation}`).includes(model);
+  },
+
+  manyToManyMarkedForDeletionModels(relation) {
     const relationModels = this.get('_manyToManyDeleted') &&
                             this.get(`_manyToManyDeleted.${relation}`);
     return relationModels && relationModels.toArray();
