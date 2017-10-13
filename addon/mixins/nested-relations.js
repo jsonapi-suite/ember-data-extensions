@@ -14,7 +14,7 @@ const iterateRelations = function(record, relations, callback) {
     let metadata          = record.relationshipFor(relationName);
     let kind              = metadata.kind;
     let relatedRecord     = record.get(relationName);
-    let manyToManyDeleted = record.manyToManyMarkedForDeletion(relationName);
+    let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(relationName);
 
 
     if (metadata.options.async !== false) {
