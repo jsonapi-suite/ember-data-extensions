@@ -1,10 +1,5 @@
 import Ember from 'ember';
 
-const {
-  defineProperty,
-  computed
-} = Ember;
-
 const resetRelations = function(record) {
   Object.keys(record.get('__recordsJustSaved')).forEach((relationName) => {
     let relationRecords = record.get('__recordsJustSaved')[relationName];
@@ -67,7 +62,10 @@ export default Ember.Mixin.create({
 
     if(!deletedRelations.get(relation)) {
       deletedRelations.set(relation, Ember.A());
-      defineProperty(this, `manyToManyDeleted${relation}`, computed.readOnly(`_manyToManyDeleted.${relation}`));
+      Ember.defineProperty(
+        this,
+        `manyToManyDeleted${relation}`, Ember.computed.readOnly(`_manyToManyDeleted.${relation}`)
+      );
     }
 
     if(!deletedRelations.get(relation).includes(model)) {
