@@ -62,17 +62,15 @@ export default Ember.Mixin.create({
 
     if(!deletedRelations.get(relation)) {
       deletedRelations.set(relation, Ember.A());
+      Ember.defineProperty(
+        this,
+        `manyToManyDeleted${relation}`, Ember.computed.readOnly(`_manyToManyDeleted.${relation}`)
+      );
     }
 
     if(!deletedRelations.get(relation).includes(model)) {
       deletedRelations.get(relation).pushObject(model);
     }
-  },
-
-  manyToManyMarkedForDeletion(relation, model) {
-    return this.get('_manyToManyDeleted') &&
-            this.get(`_manyToManyDeleted.${relation}`) && 
-            this.get(`_manyToManyDeleted.${relation}`).includes(model);
   },
 
   manyToManyMarkedForDeletionModels(relation) {
