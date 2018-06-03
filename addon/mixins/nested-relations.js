@@ -35,12 +35,17 @@ const attributesFor = function(record, isManyToManyDelete) {
   let attrs = {};
 
   let changes = record.changedAttributes();
+
+  let serializer = record.store.serializerFor(record.constructor.modelName);
+
   record.eachAttribute((name/* meta */) => {
+    let keyName = serializer.keyForAttribute(name);
+
     if (record.get('isNew') || changes[name]) {
       let value = record.get(name);
 
       if (value !== undefined) {
-        attrs[name] = record.get(name);
+        attrs[keyName] = record.get(name);
       }
     }
   });
