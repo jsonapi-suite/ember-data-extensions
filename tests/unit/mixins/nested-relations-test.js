@@ -34,6 +34,7 @@ const Genre = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
 
 const Post = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
   title: DS.attr('string'),
+  publishedDate: DS.attr('date'),
   genre: DS.belongsTo(),
   author: DS.belongsTo(),
   asyncFalseAuthor: DS.belongsTo('author', { async: false }),
@@ -144,6 +145,23 @@ test('it serializes basic attributes correctly', function(assert) {
       type: 'posts',
       attributes: {
         title: 'test post'
+      }
+    }
+  };
+
+  assert.deepEqual(json, expectedJSON, 'has correct json');
+});
+
+test('it respects custom keyForAttribute settings in serializer', function(assert) {
+  let date = new Date();
+  let post = store.createRecord('post', { publishedDate: date });
+  let json = serialize(post, {});
+
+  let expectedJSON = {
+    data: {
+      type: 'posts',
+      attributes: {
+        published_date: date // serializer transforms to underscores
       }
     }
   };
