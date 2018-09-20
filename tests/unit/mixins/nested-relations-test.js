@@ -487,22 +487,30 @@ test('nested one-to-one', function(assert) {
             type: 'authors',
             method: 'create',
             'temp-id': author.tempId(),
-            relationships: {
-              state: {
-                data: {
-                  type: 'states',
-                  'temp-id': state.tempId(),
-                  method: 'create',
-                }
-              }
-            }
           }
         }
       }
     },
     included: [
-      { type: 'authors', 'temp-id': author.tempId(), attributes: { name: 'Joe Author' }},
-      { type: 'states', 'temp-id': state.tempId(), attributes: { name: 'New York' }}
+      {
+        type: 'states',
+        'temp-id': state.tempId(),
+        attributes: { name: 'New York' }
+      },
+      {
+        type: 'authors',
+        'temp-id': author.tempId(),
+        attributes: { name: 'Joe Author' },
+        relationships: {
+          state: {
+            data: {
+              type: 'states',
+              'temp-id': state.tempId(),
+              method: 'create',
+            }
+          }
+        }
+      }
     ]
   };
   assert.deepEqual(json, expectedJSON);
@@ -536,24 +544,32 @@ test('nested one-to-many', function(assert) {
             {
               type: 'tags',
               'temp-id': tag.tempId(),
-              method: 'create',
-              relationships: {
-                creator: {
-                  data: {
-                    type: 'users',
-                    'temp-id': user.tempId(),
-                    method: 'create'
-                  }
-                }
-              }
+              method: 'create'
             }
           ]
         }
       }
     },
     included: [
-      { type: 'users', 'temp-id': user.tempId(), attributes: { name: 'Joe User' } },
-      { type: 'tags',  'temp-id': tag.tempId(), attributes: { name: 'tag1' } }
+      {
+        type: 'users',
+        'temp-id': user.tempId(),
+        attributes: { name: 'Joe User' }
+      },
+      {
+        type: 'tags',
+        'temp-id': tag.tempId(),
+        attributes: { name: 'tag1' },
+        relationships: {
+          creator: {
+            data: {
+              type: 'users',
+              'temp-id': user.tempId(),
+              method: 'create'
+            }
+          }
+        }
+      }
     ]
   };
   assert.deepEqual(json, expectedJSON);
@@ -597,24 +613,28 @@ test('array with nesting', function(assert) {
           data: {
             type: 'authors',
             'temp-id': author.tempId(),
-            method: 'create',
-            relationships: {
-              state: {
-                data: {
-                  method: 'create',
-                  type: 'states',
-                  'temp-id': state.tempId(),
-                }
-              }
-            }
+            method: 'create'
           }
         }
       }
     },
     included: [
       { type: 'tags', 'temp-id': tag.tempId(), attributes: { name: 'tag1' } },
-      { type: 'authors','temp-id': author.tempId(), attributes: { name: 'Joe Author' } },
-      { type: 'states', 'temp-id': state.tempId(), attributes: { name: 'New York' } }
+      { type: 'states', 'temp-id': state.tempId(), attributes: { name: 'New York' } },
+      {
+        type: 'authors',
+        'temp-id': author.tempId(),
+        attributes: { name: 'Joe Author' },
+        relationships: {
+          state: {
+            data: {
+              method: 'create',
+              type: 'states',
+              'temp-id': state.tempId(),
+            }
+          }
+        }
+      }
     ]
   };
   assert.deepEqual(json, expectedJSON);

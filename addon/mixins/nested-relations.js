@@ -86,30 +86,44 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
 const payloadForInclude = function(payload) {
   let payloadCopy = Ember.copy(payload, true);
   delete(payloadCopy.method);
-  delete(payloadCopy.relationships);
 
   return payloadCopy;
-}
+};
 
 const payloadForRelationship = function(payload) {
   let payloadCopy = Ember.copy(payload, true);
   delete(payloadCopy.attributes);
+  delete(payloadCopy.relationships);
 
   return payloadCopy;
-}
+};
 
+const addToIncludes = function(payload) {
+  let includedPayload = payloadForInclude(payload);
+
+  if (!includedPayload.attributes && !isPresentObject(includedPayload.relationships)) {
+    return;
+  }
+
+  const alreadyIncluded = includedRecords.find((includedRecord) =>
+    includedPayload['type'] === includedRecord['type'] &&
+      ((includedPayload['temp-id'] && includedPayload['temp-id'] === includedRecord['temp-id']) ||
+        (includedPayload['id'] && includedPayload['id'] === includedRecord['id']))
+  ) !== undefined;
+
+  if (!alreadyIncluded) {
+    includedRecords.push(payloadForInclude(payload));
+  }
+};
 
 const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted) {
   let payloads = [];
   savedRecords[relationName] = [];
+
   relatedRecords.forEach((relatedRecord) => {
     let payload = jsonapiPayload(relatedRecord, manyToManyDeleted && manyToManyDeleted.includes(relatedRecord));
     processRelationships(subRelations, payload, relatedRecord);
-
-    let includedPayload = payloadForInclude(payload);
-    if (includedPayload.attributes) {
-      includedRecords.push(payloadForInclude(payload));
-    }
+    addToIncludes(payload);
 
     payloads.push(payloadForRelationship(payload));
     savedRecords[relationName].push(relatedRecord);
@@ -119,12 +133,9 @@ const hasManyData = function(relationName, relatedRecords, subRelations, manyToM
 
 const belongsToData = function(relatedRecord, subRelations) {
   let payload = jsonapiPayload(relatedRecord);
-
-  let includedPayload = payloadForInclude(payload);
-  if (includedPayload.attributes) {
-    includedRecords.push(payloadForInclude(payload));
-  }
   processRelationships(subRelations, payload, relatedRecord);
+  addToIncludes(payload);
+
   return { data: payloadForRelationship(payload) };
 };
 
@@ -136,7 +147,6 @@ const processRelationship = function(name, kind, relationData, subRelations, man
   } else {
     payload = belongsToData(relationData, subRelations);
   }
-
 
   if (payload && payload.data) {
     callback(payload);
