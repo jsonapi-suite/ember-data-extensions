@@ -32,7 +32,7 @@ const isPresentObject = function(val) {
   return val && Object.keys(val).length > 0;
 };
 
-const attributesFor = function(record, isManyToManyDelete) {
+const attributesFor = function(record) {
   let attrs = {};
 
   let changes = record.changedAttributes();
@@ -54,7 +54,7 @@ const attributesFor = function(record, isManyToManyDelete) {
 };
 
 const jsonapiPayload = function(record, isManyToManyDelete) {
-  let attributes = attributesFor(record, isManyToManyDelete);
+  let attributes = attributesFor(record);
 
   let payload = { type: record.jsonapiType() };
 
@@ -69,7 +69,7 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
   else if (record.get('markedForDestruction')) {
     payload['method'] = 'destroy';
   }
-  else if (record.get('markedForDeletion')) {
+  else if (record.get('markedForDeletion') || isManyToManyDelete) {
     payload['method'] = 'disassociate';
   }
   else if (record.get('currentState.isDirty')) {

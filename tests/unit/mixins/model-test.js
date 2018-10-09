@@ -88,7 +88,7 @@ test('resetting relations when only sending dirty relations', function(assert) {
         type: 'tags',
         attributes: { name: 'tag1 changed' }
       }
-    ])
+    ]);
 
 
     done();
