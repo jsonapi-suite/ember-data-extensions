@@ -186,6 +186,7 @@ test('it does not serialize non-dirty attributes', function(assert) {
     }
   });
   let post = store.peekRecord('post', 1);
+
   let json = serialize(post, {});
   let expectedJSON = {
     data: {
@@ -205,8 +206,9 @@ test('excluding attributes', function(assert) {
 });
 
 test('it serializes one-to-one correctly', function(assert) {
+  let author = store.createRecord('author', { name: 'Joe Author' });
   let post = store.createRecord('post', {
-    author: store.createRecord('author', { name: 'Joe Author' })
+    author: author
   });
   let json = serialize(post, { attributes: false, relationships: 'author' });
   let expectedJSON = {
@@ -216,20 +218,25 @@ test('it serializes one-to-one correctly', function(assert) {
         author: {
           data: {
             type: 'authors',
-            attributes: {
-              name: 'Joe Author'
-            }
+            'temp-id': author.tempId(),
+            method: 'create'
           }
         }
       }
-    }
+    },
+    included: [
+      {type: 'authors', 'temp-id': author.tempId(), attributes: { name: 'Joe Author' }}
+    ]
   };
   assert.deepEqual(json, expectedJSON, 'has correct json');
 });
 
 test('it serializes async: false relationships correctly', function(assert) {
+
+  // NOTE: Not sure if I'm doing this right with the async thing
+  let author = store.createRecord('author', { name: 'Joe Author' });
   let post = store.createRecord('post', {
-    asyncFalseAuthor: store.createRecord('author', { name: 'Joe Author' })
+    asyncFalseAuthor: author
   });
   let json = serialize(post, { attributes: false, relationships: 'asyncFalseAuthor' });
   let expectedJSON = {
@@ -239,13 +246,15 @@ test('it serializes async: false relationships correctly', function(assert) {
         'async-false-author': {
           data: {
             type: 'authors',
-            attributes: {
-              name: 'Joe Author'
-            }
+            method: 'create',
+            'temp-id': author.tempId()
           }
         }
       }
-    }
+    },
+    included: [
+      { type: 'authors', 'temp-id': author.tempId(), attributes: { name: 'Joe Author' }}
+    ]
   };
   assert.deepEqual(json, expectedJSON, 'has correct json');
 });
@@ -266,9 +275,7 @@ test('it serializes has one marked for deletion correctly', function(assert) {
           data: {
             id: '2',
             type: 'authors',
-            attributes: {
-              _delete: true
-            }
+            method: 'disassociate'
           }
         }
       }
@@ -294,9 +301,7 @@ test('it serializes has one marked for destruction correctly', function(assert) 
           data: {
             id: '2',
             type: 'authors',
-            attributes: {
-              _destroy: true
-            }
+            method: 'destroy'
           }
         }
       }
@@ -307,9 +312,10 @@ test('it serializes has one marked for destruction correctly', function(assert) 
 });
 
 test('it serializes one-to-many correctly', function(assert) {
+  let tag = store.createRecord('tag', { name: 'tag1' });
   let post = store.createRecord('post', {
     tags: [
-      store.createRecord('tag', { name: 'tag1' })
+      tag
     ]
   });
 
@@ -323,14 +329,16 @@ test('it serializes one-to-many correctly', function(assert) {
           data: [
             {
               type: 'tags',
-              attributes: {
-                name: 'tag1'
-              }
+              'temp-id': tag.tempId(),
+              method: 'create'
             }
           ]
         }
       }
-    }
+    },
+    included: [
+      { type: 'tags', 'temp-id': tag.tempId(), attributes: { name: 'tag1' } }
+    ]
   };
   assert.deepEqual(json, expectedJSON, 'has correct json');
 });
@@ -350,8 +358,8 @@ test('one-to-many deletion/destruction', function(assert) {
         tags: {
           data: [
             { type: 'tags', id: '2' },
-            { type: 'tags', id: '3', attributes: { _delete: true } },
-            { type: 'tags', id: '4', attributes: { _destroy: true } },
+            { type: 'tags', id: '3', method: 'disassociate' },
+            { type: 'tags', id: '4', method: 'destroy' }
           ]
         }
       }
@@ -430,18 +438,23 @@ test('does not serialize attributes of non-dirty relations', function(assert) {
           data: {
             type: 'genres',
             id: '88',
-            attributes: { name: 'drama' }
+            method: 'update'
           }
         },
         tags: {
           data: [
-            { type: 'tags', id: '2', attributes: { name: 'tag1 change' } },
+            { type: 'tags', id: '2', method: 'update' },
             { type: 'tags', id: '3' },
-            { type: 'tags', attributes: { name: 'new tag' } }
+            { type: 'tags', 'temp-id': newTag.tempId(), method: 'create' }
           ]
         }
       }
-    }
+    },
+    included: [
+      {type: 'tags', id:'2', attributes: { name: 'tag1 change' }},
+      {type: 'tags', 'temp-id': newTag.tempId(), attributes: { name: 'new tag' }},
+      {type: 'genres', id: '88', attributes: { name: 'drama' }}
+    ]
   };
   assert.deepEqual(json, expectedJSON);
 });
@@ -472,19 +485,33 @@ test('nested one-to-one', function(assert) {
         author: {
           data: {
             type: 'authors',
-            attributes: { name: 'Joe Author' },
-            relationships: {
-              state: {
-                data: {
-                  type: 'states',
-                  attributes: { name: 'New York'}
-                }
-              }
+            method: 'create',
+            'temp-id': author.tempId(),
+          }
+        }
+      }
+    },
+    included: [
+      {
+        type: 'states',
+        'temp-id': state.tempId(),
+        attributes: { name: 'New York' }
+      },
+      {
+        type: 'authors',
+        'temp-id': author.tempId(),
+        attributes: { name: 'Joe Author' },
+        relationships: {
+          state: {
+            data: {
+              type: 'states',
+              'temp-id': state.tempId(),
+              method: 'create',
             }
           }
         }
       }
-    }
+    ]
   };
   assert.deepEqual(json, expectedJSON);
 });
@@ -516,20 +543,34 @@ test('nested one-to-many', function(assert) {
           data: [
             {
               type: 'tags',
-              attributes: { name: 'tag1' },
-              relationships: {
-                creator: {
-                  data: {
-                    type: 'users',
-                    attributes: { name: 'Joe User' }
-                  }
-                }
-              }
+              'temp-id': tag.tempId(),
+              method: 'create'
             }
           ]
         }
       }
-    }
+    },
+    included: [
+      {
+        type: 'users',
+        'temp-id': user.tempId(),
+        attributes: { name: 'Joe User' }
+      },
+      {
+        type: 'tags',
+        'temp-id': tag.tempId(),
+        attributes: { name: 'tag1' },
+        relationships: {
+          creator: {
+            data: {
+              type: 'users',
+              'temp-id': user.tempId(),
+              method: 'create'
+            }
+          }
+        }
+      }
+    ]
   };
   assert.deepEqual(json, expectedJSON);
 });
@@ -565,25 +606,36 @@ test('array with nesting', function(assert) {
       relationships: {
         tags: {
           data: [
-            { type: 'tags', attributes: { name: 'tag1' } }
+            { type: 'tags', 'temp-id': tag.tempId(), method: 'create' }
           ]
         },
         author: {
           data: {
             type: 'authors',
-            attributes: { name: 'Joe Author' },
-            relationships: {
-              state: {
-                data: {
-                  type: 'states',
-                  attributes: { name: 'New York' }
-                }
-              }
+            'temp-id': author.tempId(),
+            method: 'create'
+          }
+        }
+      }
+    },
+    included: [
+      { type: 'tags', 'temp-id': tag.tempId(), attributes: { name: 'tag1' } },
+      { type: 'states', 'temp-id': state.tempId(), attributes: { name: 'New York' } },
+      {
+        type: 'authors',
+        'temp-id': author.tempId(),
+        attributes: { name: 'Joe Author' },
+        relationships: {
+          state: {
+            data: {
+              method: 'create',
+              type: 'states',
+              'temp-id': state.tempId(),
             }
           }
         }
       }
-    }
+    ]
   };
   assert.deepEqual(json, expectedJSON);
 });

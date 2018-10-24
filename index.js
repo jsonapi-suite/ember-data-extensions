@@ -2,5 +2,8 @@
 'use strict';
 
 module.exports = {
-  name: 'ember-data-extensions'
+  name: 'ember-data-extensions',
+  isDevelopingAddon() {
+    return true;
+  }
 };

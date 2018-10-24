@@ -14,16 +14,29 @@ const iterateRelations = function(request, callback) {
 
 // Omit anything that has all blank attributes
 // Akin to rails' accepts_nested_attributes_for :foos, reject_if: :all_blank
-const recordFromJson = function(db, data, callback) {
-  let attributes = data.attributes || {};
+const recordFromJson = function(db, data, includedData, callback) {
+
+  let found;
+
+  if (data['temp-id']) {
+    found = includedData.filter(item => (item['temp-id'] === data['temp-id']))[0];
+  }
+  else {
+    found = includedData.filter(item => (item.id === data.id))[0];
+  }
+
+  let attributes = found ? found.attributes : {};
 
   if (data.id) {
     let record = db[data.type].find(data.id);
-    record.update(attributes);
+
+    if (data['method'] === 'update') {
+      record.update(attributes);
+    }
     callback(record);
     return;
   }
-
+  
   let notNull = false;
   Object.keys(attributes).forEach((key) => {
     if (Ember.isPresent(attributes[key])) {
@@ -53,17 +66,16 @@ const hasRecord = function(array, record) {
   }
 };
 
-const markedForRemoval= function(record) {
-  return record._delete || record._destroy;
-};
-
-const buildOneToMany = function(db, relationData, originalRecords) {
+const buildOneToMany = function(db, relationData, includedRecords, originalRecords) {
   relationData.forEach((data) => {
-    recordFromJson(db, data, (record) => {
-      if (markedForRemoval(record)) {
+    let method = data.method;
+
+    recordFromJson(db, data, includedRecords, (record) => {
+      if (method === 'disassociate' || method === 'destroy') {
         let index = originalRecords.indexOf(record);
         originalRecords.splice(index, 1);
-      } else {
+      }
+      else {
         if (!hasRecord(originalRecords, record)) {
           originalRecords.push(record);
         }
@@ -74,13 +86,18 @@ const buildOneToMany = function(db, relationData, originalRecords) {
 };
 
 const processRelations = function(record, db, request) {
+  let includedRecords = JSON.parse(request.requestBody).included || [];
+
   iterateRelations(request, (relationName, relationData) => {
     if (Array.isArray(relationData)) {
       let originals = record[relationName].models;
-      record[relationName] = buildOneToMany(db, relationData, originals);
+      record[relationName] = buildOneToMany(db, relationData, includedRecords, originals);
     } else {
-      recordFromJson(db, relationData, (relationRecord) => {
+      recordFromJson(db, relationData, includedRecords, (relationRecord, remove) => {
         record[relationName] = relationRecord;
+        if (remove) {
+          delete record[relationName];
+        }
       });
     }
   });

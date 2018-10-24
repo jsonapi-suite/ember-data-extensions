@@ -70,8 +70,8 @@ test('resetting relations when only sending dirty relations', function(assert) {
         data: [
           {
             id: '2',
+            method: 'update',
             type: 'tags',
-            attributes: { name: 'tag1 changed' }
           },
           {
             id: '3',
@@ -80,6 +80,17 @@ test('resetting relations when only sending dirty relations', function(assert) {
         ]
       }
     });
+
+    let included = JSON.parse(request.requestBody).included;
+    assert.deepEqual(included, [
+      {
+        id: '2',
+        type: 'tags',
+        attributes: { name: 'tag1 changed' }
+      }
+    ]);
+
+
     done();
     let post = db.posts.find(request.params.id);
     post.tags.models[0].update({ name: 'tag1 changed' });
