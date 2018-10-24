@@ -112,7 +112,7 @@ const addToIncludes = function(payload) {
   ) !== undefined;
 
   if (!alreadyIncluded) {
-    includedRecords.push(payloadForInclude(payload));
+    includedRecords.push(includedPayload);
   }
 };
 
