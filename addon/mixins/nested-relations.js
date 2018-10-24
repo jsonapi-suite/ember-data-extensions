@@ -7,8 +7,6 @@ import Ember from 'ember';
 // This is only required for hasMany's
 let savedRecords = {};
 
-let includedRecords = [];
-
 const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach((relationName) => {
     let subRelations = relations[relationName];
@@ -98,7 +96,7 @@ const payloadForRelationship = function(payload) {
   return payloadCopy;
 };
 
-const addToIncludes = function(payload) {
+const addToIncludes = function(payload, includedRecords) {
   let includedPayload = payloadForInclude(payload);
 
   if (!includedPayload.attributes && !isPresentObject(includedPayload.relationships)) {
@@ -107,8 +105,8 @@ const addToIncludes = function(payload) {
 
   const alreadyIncluded = includedRecords.find((includedRecord) =>
     includedPayload['type'] === includedRecord['type'] &&
-      ((includedPayload['temp-id'] && includedPayload['temp-id'] === includedRecord['temp-id']) ||
-        (includedPayload['id'] && includedPayload['id'] === includedRecord['id']))
+    ((includedPayload['temp-id'] && includedPayload['temp-id'] === includedRecord['temp-id']) ||
+      (includedPayload['id'] && includedPayload['id'] === includedRecord['id']))
   ) !== undefined;
 
   if (!alreadyIncluded) {
@@ -116,14 +114,14 @@ const addToIncludes = function(payload) {
   }
 };
 
-const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted) {
+const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted, includedRecords) {
   let payloads = [];
   savedRecords[relationName] = [];
 
   relatedRecords.forEach((relatedRecord) => {
     let payload = jsonapiPayload(relatedRecord, manyToManyDeleted && manyToManyDeleted.includes(relatedRecord));
-    processRelationships(subRelations, payload, relatedRecord);
-    addToIncludes(payload);
+    processRelationships(subRelations, payload, relatedRecord, includedRecords);
+    addToIncludes(payload, includedRecords);
 
     payloads.push(payloadForRelationship(payload));
     savedRecords[relationName].push(relatedRecord);
@@ -131,21 +129,21 @@ const hasManyData = function(relationName, relatedRecords, subRelations, manyToM
   return { data: payloads };
 };
 
-const belongsToData = function(relatedRecord, subRelations) {
+const belongsToData = function(relatedRecord, subRelations, includedRecords) {
   let payload = jsonapiPayload(relatedRecord);
-  processRelationships(subRelations, payload, relatedRecord);
-  addToIncludes(payload);
+  processRelationships(subRelations, payload, relatedRecord, includedRecords);
+  addToIncludes(payload, includedRecords);
 
   return { data: payloadForRelationship(payload) };
 };
 
-const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, callback) {
+const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, includedRecords, callback) {
   let payload = null;
 
   if (kind === 'hasMany') {
-    payload = hasManyData(name, relationData, subRelations, manyToManyDeleted);
+    payload = hasManyData(name, relationData, subRelations, manyToManyDeleted, includedRecords);
   } else {
-    payload = belongsToData(relationData, subRelations);
+    payload = belongsToData(relationData, subRelations, includedRecords);
   }
 
   if (payload && payload.data) {
@@ -153,12 +151,12 @@ const processRelationship = function(name, kind, relationData, subRelations, man
   }
 };
 
-const processRelationships = function(relationshipHash, jsonData, record) {
+const processRelationships = function(relationshipHash, jsonData, record, includedRecords) {
   if (isPresentObject(relationshipHash)) {
     jsonData.relationships = {};
 
     iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted) => {
-      processRelationship(name, kind, related, subRelations, manyToManyDeleted, (payload) => {
+      processRelationship(name, kind, related, subRelations, manyToManyDeleted, includedRecords, (payload) => {
         let serializer = record.store.serializerFor(record.constructor.modelName);
         let serializedName = serializer.keyForRelationship(name);
         jsonData.relationships[serializedName] = payload;
@@ -192,8 +190,9 @@ const relationshipsDirective = function(value) {
 export default Ember.Mixin.create({
   serialize(snapshot/*, options */) {
     savedRecords = [];
-    includedRecords = [];
+
     let json = this._super(...arguments);
+    let includedRecords = [];
 
     if (snapshot.record.get('emberDataExtensions') !== false) {
       delete(json.data.relationships);
@@ -225,7 +224,7 @@ export default Ember.Mixin.create({
       }
 
       let relationships = relationshipsDirective(adapterOptions.relationships);
-      processRelationships(relationships, json.data, snapshot.record);
+      processRelationships(relationships, json.data, snapshot.record, includedRecords);
       if (includedRecords && includedRecords.length > 0) {
         json.included = includedRecords;
       }
