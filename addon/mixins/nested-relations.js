@@ -1,4 +1,6 @@
-import Ember from 'ember';
+import Mixin from '@ember/object/mixin';
+import { copy } from '@ember/object/internals';
+import { merge } from '@ember/polyfills';
 
 // This is for reference in our post-save promise
 // We need to unload these records after save, otherwise
@@ -82,14 +84,14 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
 };
 
 const payloadForInclude = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
+  let payloadCopy = copy(payload, true);
   delete(payloadCopy.method);
 
   return payloadCopy;
 };
 
 const payloadForRelationship = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
+  let payloadCopy = copy(payload, true);
   delete(payloadCopy.attributes);
   delete(payloadCopy.relationships);
 
@@ -173,7 +175,7 @@ const relationshipsDirective = function(value) {
       directive[value] = {};
     } else if(Array.isArray(value)) {
       value.forEach((key) => {
-        Ember.merge(directive, relationshipsDirective(key));
+        merge(directive, relationshipsDirective(key));
       });
     } else {
       Object.keys(value).forEach((key) => {
@@ -187,7 +189,7 @@ const relationshipsDirective = function(value) {
   return directive;
 };
 
-export default Ember.Mixin.create({
+export default Mixin.create({
   serialize(snapshot/*, options */) {
     savedRecords = [];
 

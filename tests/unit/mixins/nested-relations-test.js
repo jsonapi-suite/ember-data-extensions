@@ -1,9 +1,9 @@
-import Ember from 'ember';
 import DS from 'ember-data';
 import moduleForAcceptance from '../../../tests/helpers/module-for-acceptance';
 import NestedRelationsMixin from 'ember-data-extensions/mixins/nested-relations';
 import ModelMixin from 'ember-data-extensions/mixins/model';
 import getOwner from '../../../tests/helpers/get-owner';
+import { begin, end } from '@ember/runloop';
 
 QUnit.dump.maxDepth = 999999999;
 
@@ -60,11 +60,11 @@ moduleForAcceptance('Unit | Mixin | nested-relations', {
     getOwner(this).register('model:state', State);
     getOwner(this).register('model:user', User);
 
-    Ember.run.begin();
+    begin();
   },
 
   afterEach() {
-    Ember.run.end();
+    end();
   }
 });
 

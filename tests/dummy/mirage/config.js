@@ -1,4 +1,5 @@
-import Ember from 'ember';
+import { A } from '@ember/array';
+import { isPresent } from '@ember/utils';
 
 const attributes = function(request) {
   return JSON.parse(request.requestBody).data.attributes || {};
@@ -36,10 +37,10 @@ const recordFromJson = function(db, data, includedData, callback) {
     callback(record);
     return;
   }
-  
+
   let notNull = false;
   Object.keys(attributes).forEach((key) => {
-    if (Ember.isPresent(attributes[key])) {
+    if (isPresent(attributes[key])) {
       notNull = true;
     }
   });
@@ -50,11 +51,11 @@ const recordFromJson = function(db, data, includedData, callback) {
 };
 
 const mapBy = function(array, attribute) {
-  return Ember.A(array).mapBy(attribute);
+  return A(array).mapBy(attribute);
 };
 
 const contains = function(array, element) {
-  return Ember.A(array).contains(element);
+  return A(array).contains(element);
 };
 
 const hasRecord = function(array, record) {
