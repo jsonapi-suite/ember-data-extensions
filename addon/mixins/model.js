@@ -1,4 +1,9 @@
-import Ember from 'ember';
+import Mixin from '@ember/object/mixin';
+import { computed } from '@ember/object';
+import EmberObject from '@ember/object';
+import { A } from '@ember/array';
+import { defineProperty } from '@ember/object';
+import { guidFor } from '@ember/object/internals';
 
 const resetRelations = function(record) {
   Object.keys(record.get('__recordsJustSaved')).forEach((relationName) => {
@@ -23,17 +28,17 @@ const defaultOptions = function(options) {
   }
 };
 
-export default Ember.Mixin.create({
-  hasDirtyAttributes: Ember.computed('currentState.isDirty', 'markedForDestruction', 'markedForDeletion', function() {
+export default Mixin.create({
+  hasDirtyAttributes: computed('currentState.isDirty', 'markedForDestruction', 'markedForDeletion', function() {
     let original = this._super(...arguments);
     return original || this.get('markedForDestruction') || this.get('markedForDeletion');
   }),
 
-  markedForDeletion: Ember.computed('_markedForDeletion', function() {
+  markedForDeletion: computed('_markedForDeletion', function() {
     return this.get('_markedForDeletion') || false;
   }),
 
-  markedForDestruction: Ember.computed('_markedForDestruction', function() {
+  markedForDestruction: computed('_markedForDestruction', function() {
     return this.get('_markedForDestruction') || false;
   }),
 
@@ -56,15 +61,15 @@ export default Ember.Mixin.create({
   markManyToManyDeletion(relation, model) {
     let deletedRelations = this.get('_manyToManyDeleted');
     if(!deletedRelations) {
-      this.set('_manyToManyDeleted', Ember.Object.create());
+      this.set('_manyToManyDeleted', EmberObject.create());
       deletedRelations = this.get('_manyToManyDeleted');
     }
 
     if(!deletedRelations.get(relation)) {
-      deletedRelations.set(relation, Ember.A());
-      Ember.defineProperty(
+      deletedRelations.set(relation, A());
+      defineProperty(
         this,
-        `manyToManyDeleted${relation}`, Ember.computed.readOnly(`_manyToManyDeleted.${relation}`)
+        `manyToManyDeleted${relation}`, computed.readOnly(`_manyToManyDeleted.${relation}`)
       );
     }
 
@@ -87,7 +92,7 @@ export default Ember.Mixin.create({
 
   tempId() {
     if (!this._tempId) {
-      this._tempId = Ember.guidFor(this);
+      this._tempId = guidFor(this);
     }
     return this._tempId;
   },

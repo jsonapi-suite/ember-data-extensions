@@ -1,5 +1,6 @@
-import Ember from 'ember';
+import Controller from '@ember/controller';
+import { filterBy } from '@ember/object/computed';
 
-export default Ember.Controller.extend({
-  tags: Ember.computed.filterBy('model.tags', 'markedForDeletion', false)
+export default Controller.extend({
+  tags: filterBy('model.tags', 'markedForDeletion', false)
 });
