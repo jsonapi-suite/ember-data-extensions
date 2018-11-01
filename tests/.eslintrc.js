@@ -4,7 +4,6 @@ module.exports = {
   },
   globals: {
     server: true,
-    QUnit: true,
-    test: true
+    QUnit: true
   }
 };

@@ -12,5 +12,8 @@ module.exports = {
     browser: true
   },
   rules: {
+  },
+  globals: {
+    module: true
   }
 };

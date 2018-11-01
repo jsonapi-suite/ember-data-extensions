@@ -3,6 +3,7 @@ import ModelMixin from 'ember-data-extensions/mixins/model';
 import moduleForAcceptance from '../../../tests/helpers/module-for-acceptance';
 import getOwner from '../../../tests/helpers/get-owner';
 import { run } from '@ember/runloop';
+import { test } from 'qunit';
 
 let store = null;
 let TestStore = DS.Store.extend();

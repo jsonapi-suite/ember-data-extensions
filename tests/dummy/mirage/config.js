@@ -125,4 +125,7 @@ export default function() {
     let post = db.posts.find(request.params.id);
     return post;
   });
+
+  this.get('/authors/:id');
+  this.get('/tags/:id');
 }
