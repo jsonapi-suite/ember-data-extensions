@@ -6,7 +6,7 @@ import { defineProperty } from '@ember/object';
 import { guidFor } from '@ember/object/internals';
 
 const resetRelations = function(record) {
-  Object.keys(record.get('__recordsJustSaved')).forEach((relationName) => {
+  Object.keys(record.get('__recordsJustSaved') || {}).forEach((relationName) => {
     let relationRecords = record.get('__recordsJustSaved')[relationName];
 
     relationRecords.forEach((r) => {
