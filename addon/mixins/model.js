@@ -110,7 +110,7 @@ export default Mixin.create({
     defaultOptions(options);
     let promise = this._super(...arguments);
     if (options.resetRelations === true) {
-      promise.then(resetRelations);
+      return promise.then(resetRelations);
     }
     return promise;
   }
