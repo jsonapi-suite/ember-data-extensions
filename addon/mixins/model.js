@@ -20,6 +20,7 @@ const resetRelations = function(record) {
     });
   });
   record.set('__recordsJustSaved', []);
+  return record;
 };
 
 const defaultOptions = function(options) {
