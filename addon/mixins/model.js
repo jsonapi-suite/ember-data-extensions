@@ -20,6 +20,7 @@ const resetRelations = function(record) {
     });
   });
   record.set('__recordsJustSaved', []);
+  return record;
 };
 
 const defaultOptions = function(options) {
@@ -110,7 +111,7 @@ export default Mixin.create({
     defaultOptions(options);
     let promise = this._super(...arguments);
     if (options.resetRelations === true) {
-      promise.then(resetRelations);
+      return promise.then(resetRelations);
     }
     return promise;
   }
