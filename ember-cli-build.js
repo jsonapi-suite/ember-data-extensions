@@ -7,7 +7,7 @@ module.exports = function(defaults) {
     // Add options here
   });
 
-  app.import('bower_components/materialize/dist/css/materialize.css', { prepend: true });
+  app.import('node_modules/materialize-css/dist/css/materialize.css', { prepend: true });
 
   /*
     This build file specifies the options for the dummy test app of this
