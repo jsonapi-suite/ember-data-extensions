@@ -1,59 +1,56 @@
-import { test } from 'qunit';
-import moduleForAcceptance from '../../tests/helpers/module-for-acceptance';
+import { module, test } from 'qunit';
 import page from 'dummy/tests/pages/post-form';
 import detailPage from 'dummy/tests/pages/show-post';
+import { visit } from '@ember/test-helpers';
+import { setupApplicationTest } from 'ember-qunit';
+import setupMirage from 'ember-cli-mirage/test-support/setup-mirage';
 
-moduleForAcceptance('Acceptance | update nested relations');
+module('Acceptance | update nested relations', function(hooks) {
+  setupApplicationTest(hooks);
+  setupMirage(hooks);
 
-test('updating nested relations', function(assert) {
-  let author = server.create('author', { name: 'Joe Author' });
-  let tag1 = server.create('tag', { name: 'tag1' });
-  let tag2 = server.create('tag', { name: 'tag2' });
-  let post = server.create('post', {
-    author: author,
-    tags: [tag1, tag2],
-    title: 'test title'
-  });
-  visit(`/posts/${post.id}/edit`);
+  test('updating nested relations', async function(assert) {
+    let author = server.create('author', { name: 'Joe Author' });
+    let tag1 = server.create('tag', { name: 'tag1' });
+    let tag2 = server.create('tag', { name: 'tag2' });
+    let post = server.create('post', {
+      author: author,
+      tags: [tag1, tag2],
+      title: 'test title'
+    });
+    await visit(`/posts/${post.id}/edit`);
 
-  andThen(function() {
     assert.equal(page.title.val, 'test title');
     assert.equal(page.authorName.val, 'Joe Author');
-    assert.equal(page.tags().count, 2);
-    assert.equal(page.tags(0).name, 'tag1');
-    assert.equal(page.tags(1).name, 'tag2');
+    assert.equal(page.tags.length, 2);
+    assert.equal(page.tags.objectAt(0).name, 'tag1');
+    assert.equal(page.tags.objectAt(1).name, 'tag2');
 
-    page.authorName.fillIn('new author');
-    page.tags(1).setName('tag2 changed');
-    page.addTag();
-    page.tags(2).setName('new tag');
-    page.submit();
+    await page.authorName.fillIn('new author');
+    await page.tags.objectAt(1).setName('tag2 changed');
+    await page.addTag();
+    await page.tags.objectAt(2).setName('new tag');
+    await page.submit();
 
-    andThen(function() {
-      post.reload();
-      assert.equal(post.author.id, author.id, 'updates existing author');
-      assert.equal(detailPage.authorName, 'new author', 'updates author name');
-      assert.equal(detailPage.tagList, 'tag1, tag2 changed, new tag', 'updates one-to-many correctly');
-    });
+    await post.reload();
+    assert.equal(post.author.id, author.id, 'updates existing author');
+    assert.equal(detailPage.authorName, 'new author', 'updates author name');
+    assert.equal(detailPage.tagList, 'tag1, tag2 changed, new tag', 'updates one-to-many correctly');
   });
-});
 
-test('updating only one member of a hasMany relation', function(assert) {
-  server.foo = 'bar';
-  let tag1 = server.create('tag', { name: 'tag1' });
-  let tag2 = server.create('tag', { name: 'tag2' });
-  let post = server.create('post', {
-    tags: [tag1, tag2],
-  });
-  visit(`/posts/${post.id}/edit`);
-
-  andThen(function() {
-    assert.equal(page.tags().count, 2);
-    page.tags(0).setName('tag1 changed');
-    page.submit();
-
-    andThen(function() {
-      assert.equal(detailPage.tagList, 'tag1 changed, tag2');
+  test('updating only one member of a hasMany relation', async function(assert) {
+    server.foo = 'bar';
+    let tag1 = server.create('tag', { name: 'tag1' });
+    let tag2 = server.create('tag', { name: 'tag2' });
+    let post = server.create('post', {
+      tags: [tag1, tag2],
     });
+    await visit(`/posts/${post.id}/edit`);
+
+    assert.equal(page.tags.length, 2);
+    await page.tags.objectAt(0).setName('tag1 changed');
+    await page.submit();
+
+    assert.equal(detailPage.tagList, 'tag1 changed, tag2');
   });
 });

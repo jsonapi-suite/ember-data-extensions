@@ -24,13 +24,9 @@ export default create({
     val: value('input')
   },
 
-  tags: collection({
-    itemScope: '.tags .tag',
-
-    item: {
-      name: value('input'),
-      setName: fillable('input'),
-      remove: clickable('a')
-    }
+  tags: collection('.tags .tag', {
+    name: value('input'),
+    setName: fillable('input'),
+    remove: clickable('a')
   })
 });
