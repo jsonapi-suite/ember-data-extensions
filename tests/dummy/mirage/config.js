@@ -128,4 +128,5 @@ export default function() {
 
   this.get('/authors/:id');
   this.get('/tags/:id');
+  this.get('/tags');
 }

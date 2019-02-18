@@ -12,6 +12,7 @@ const resetRelations = function(record) {
     relationRecords.forEach((r) => {
       let shouldUnload = r.get('isNew') || r.get('markedForDestruction');
       if (shouldUnload) {
+        record.get(relationName).removeObject(r);
         r.unloadRecord();
       } else if (r.get('markedForDeletion')) {
         record.get(relationName).removeObject(r);

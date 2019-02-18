@@ -1,5 +1,5 @@
 import Mixin from '@ember/object/mixin';
-import { copy } from '@ember/object/internals';
+import { copy } from 'ember-copy';
 import { merge } from '@ember/polyfills';
 
 // This is for reference in our post-save promise
