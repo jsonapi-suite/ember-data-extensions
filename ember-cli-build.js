@@ -1,13 +1,13 @@
-/*jshint node:true*/
-/* global require, module */
-var EmberAddon = require('ember-cli/lib/broccoli/ember-addon');
+'use strict';
+
+const EmberAddon = require('ember-cli/lib/broccoli/ember-addon');
 
 module.exports = function(defaults) {
-  var app = new EmberAddon(defaults, {
+  let app = new EmberAddon(defaults, {
     // Add options here
   });
 
-  app.import('bower_components/materialize/dist/css/materialize.css', { prepend: true });
+  app.import('node_modules/materialize-css/dist/css/materialize.css', { prepend: true });
 
   /*
     This build file specifies the options for the dummy test app of this

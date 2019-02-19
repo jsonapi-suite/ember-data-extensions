@@ -55,7 +55,7 @@ const mapBy = function(array, attribute) {
 };
 
 const contains = function(array, element) {
-  return A(array).contains(element);
+  return A(array).includes(element);
 };
 
 const hasRecord = function(array, record) {
@@ -128,4 +128,5 @@ export default function() {
 
   this.get('/authors/:id');
   this.get('/tags/:id');
+  this.get('/tags');
 }
