@@ -4,5 +4,5 @@ import ModelMixin from 'ember-data-extensions/mixins/model';
 export default DS.Model.extend(ModelMixin, {
   name: DS.attr('string'),
 
-  descriptions: DS.hasMany('description')
+  tag: DS.belongsTo('tag')
 });
