@@ -1,6 +1,7 @@
 import { setupTest } from 'ember-qunit';
 import setupMirage from 'ember-cli-mirage/test-support/setup-mirage';
 import { run } from '@ember/runloop';
+import { A } from '@ember/array';
 import { module, test } from 'qunit';
 
 const seedPost = function(store) {
@@ -111,5 +112,26 @@ module('Unit | Mixin | model', function(hooks) {
         done2();
       });
     });
+  });
+
+  test('it should correctly save deeply nested has many relations', async function(assert) {
+    assert.expect(1);
+
+    server.post('/posts', {
+      data: {
+        id: 1,
+        type: 'posts'
+      }
+    });
+
+    let store = this.owner.lookup('service:store');
+    let post = store.createRecord('post');
+    let tag = store.createRecord('tag');
+    let description = store.createRecord('description');
+
+    tag.set('descriptions', A([description]));
+    post.set('tags', A([tag]));
+    await post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } });
+    assert.ok(true);
   });
 });

@@ -4,6 +4,7 @@ import EmberObject from '@ember/object';
 import { A } from '@ember/array';
 import { defineProperty } from '@ember/object';
 import { guidFor } from '@ember/object/internals';
+import { isPresent } from '@ember/utils';
 
 const resetRelations = function(record) {
   Object.keys(record.get('__recordsJustSaved') || {}).forEach((relationName) => {
@@ -12,7 +13,9 @@ const resetRelations = function(record) {
     relationRecords.forEach((r) => {
       let shouldUnload = r.get('isNew') || r.get('markedForDestruction');
       if (shouldUnload) {
-        record.get(relationName).removeObject(r);
+        if (isPresent(record.get(relationName))) {
+          record.get(relationName).removeObject(r);
+        }
         r.unloadRecord();
       } else if (r.get('markedForDeletion')) {
         record.get(relationName).removeObject(r);
