@@ -114,6 +114,76 @@ module('Unit | Mixin | model', function(hooks) {
     });
   });
 
+  test('resetting nested relations', function(assert) {
+    let store = this.owner.lookup('service:store');
+    let done = assert.async();
+    server.patch('/posts/:id', (db, request) => {
+      let { included } = JSON.parse(request.requestBody);
+      assert.ok(included.find((obj) => obj.type === 'descriptions'));
+
+      done();
+      let post = db.posts.find(request.params.id);
+      post.tags.models[0].createDescription({ name: 'Description 2'});
+      return post;
+    });
+
+    let post = server.create('post');
+    post.createTag({ name: 'tag1' });
+    post.createTag({ name: 'tag2' });
+    let tag = post.tags.models[0];
+    server.create('description', { tag: tag });
+
+    run(() => {
+      store.pushPayload({
+        data: {
+          type: 'posts',
+          id: 1,
+          relationships: {
+            tags: {
+              data: [
+                { type: 'tags', id: '2' },
+                { type: 'tags', id: '3' }
+              ]
+            }
+          }
+        },
+        included: [
+          {
+            type: 'tags',
+            id: '2',
+            attributes: { name: 'tag1' },
+            relationships: {
+              descriptions: {
+                data: [
+                  { type: 'descriptions', 'id': '1', method: 'create' }
+                ]
+              }
+            }
+          },
+          { type: 'tags', id: '3', attributes: { name: 'tag2' } },
+          { type: 'descriptions', 'id': '1', attributes: { name: 'description' } },
+        ]
+      });
+    });
+
+    let newDescription = store.createRecord('description', { name: 'Description 2'});
+    post = store.peekRecord('post', 1);
+    tag = post.tags.firstObject;
+    tag.descriptions.addObject(newDescription);
+
+    let done2 = assert.async();
+    run(() => {
+      post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } }).then(async (p) => {
+        let tags = await p.tags;
+        let descriptions = await tags.firstObject.descriptions;
+        assert.equal(descriptions.length, 2);
+        assert.equal(descriptions.firstObject.id, 1);
+        assert.equal(descriptions.lastObject.id, 2);
+        done2();
+      });
+    });
+  });
+
   test('it should correctly save deeply nested has many relations', async function(assert) {
     assert.expect(1);
 

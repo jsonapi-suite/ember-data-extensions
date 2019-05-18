@@ -10,15 +10,19 @@ const resetRelations = function(record) {
   Object.keys(record.get('__recordsJustSaved') || {}).forEach((relationName) => {
     let relationRecords = record.get('__recordsJustSaved')[relationName];
 
-    relationRecords.forEach((r) => {
+    relationRecords.forEach(({ parent, relatedRecord }) => {
+      let r = relatedRecord;
       let shouldUnload = r.get('isNew') || r.get('markedForDestruction');
+      let relation = parent.get(relationName);
       if (shouldUnload) {
-        if (isPresent(record.get(relationName))) {
-          record.get(relationName).removeObject(r);
+        if (isPresent(relation)) {
+          relation.removeObject(r);
         }
         r.unloadRecord();
       } else if (r.get('markedForDeletion')) {
-        record.get(relationName).removeObject(r);
+        if (isPresent(relation)) {
+          relation.removeObject(r);
+        }
         r.set('markedForDeletion', false);
       }
     });

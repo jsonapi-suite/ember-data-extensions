@@ -116,7 +116,7 @@ const addToIncludes = function(payload, includedRecords) {
   }
 };
 
-const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted, includedRecords) {
+const hasManyData = function(parent, relationName, relatedRecords, subRelations, manyToManyDeleted, includedRecords) {
   let payloads = [];
   savedRecords[relationName] = [];
 
@@ -126,7 +126,7 @@ const hasManyData = function(relationName, relatedRecords, subRelations, manyToM
     addToIncludes(payload, includedRecords);
 
     payloads.push(payloadForRelationship(payload));
-    savedRecords[relationName].push(relatedRecord);
+    savedRecords[relationName].push({ parent, relatedRecord });
   });
   return { data: payloads };
 };
@@ -139,11 +139,11 @@ const belongsToData = function(relatedRecord, subRelations, includedRecords) {
   return { data: payloadForRelationship(payload) };
 };
 
-const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, includedRecords, callback) {
+const processRelationship = function(parent, name, kind, relationData, subRelations, manyToManyDeleted, includedRecords, callback) {
   let payload = null;
 
   if (kind === 'hasMany') {
-    payload = hasManyData(name, relationData, subRelations, manyToManyDeleted, includedRecords);
+    payload = hasManyData(parent, name, relationData, subRelations, manyToManyDeleted, includedRecords);
   } else {
     payload = belongsToData(relationData, subRelations, includedRecords);
   }
@@ -158,7 +158,7 @@ const processRelationships = function(relationshipHash, jsonData, record, includ
     jsonData.relationships = {};
 
     iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted) => {
-      processRelationship(name, kind, related, subRelations, manyToManyDeleted, includedRecords, (payload) => {
+      processRelationship(record, name, kind, related, subRelations, manyToManyDeleted, includedRecords, (payload) => {
         let serializer = record.store.serializerFor(record.constructor.modelName);
         let serializedName = serializer.keyForRelationship(name);
         jsonData.relationships[serializedName] = payload;
