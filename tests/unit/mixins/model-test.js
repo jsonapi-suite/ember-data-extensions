@@ -184,6 +184,78 @@ module('Unit | Mixin | model', function(hooks) {
     });
   });
 
+  test('reset relationships for multiple records which have same relation name', async function(assert) {
+    let store = this.owner.lookup('service:store');
+    server.patch('/posts/:id', (db, request) => {
+      let post = db.posts.find(request.params.id);
+      post.tags.models[0].descriptions.models[0].destroy();
+      return post;
+    });
+
+    let post = server.create('post');
+    post.createTag({ name: 'tag1' });
+    post.createTag({ name: 'tag2' });
+
+    let tag1 = post.tags.models[0];
+    let tag2 = post.tags.models[1];
+    tag1.createDescription({ name: 'Description 1'});
+    tag2.createDescription({ name: 'Description 1'});
+
+    run(() => {
+      store.pushPayload({
+        data: {
+          type: 'posts',
+          id: 1,
+          relationships: {
+            tags: {
+              data: [
+                { type: 'tags', id: '1' },
+                { type: 'tags', id: '2' }
+              ]
+            }
+          }
+        },
+        included: [
+          {
+            type: 'tags',
+            id: '1',
+            relationships: {
+              descriptions:{
+                data: [
+                  { type: 'descriptions', id: '1', method: 'destroy' }
+                ]
+              }
+            }
+          },
+          {
+            type: 'tags',
+            id: '2',
+            relationships: {
+              descriptions: {
+                data: [
+                  { type: 'descriptions', id: '2' }
+                ]
+              }
+            }
+          }
+        ]
+      });
+    });
+
+    post = store.peekRecord('post', 1);
+    post.tags.firstObject.descriptions.firstObject.markForDestruction();
+
+    let done2 = assert.async();
+    run(() => {
+      post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } }).then((p) => {
+        assert.equal(p.get('tags.length'), 2);
+        assert.equal(p.get('tags.firstObject.descriptions.length'), 0);
+        assert.equal(p.get('tags.lastObject.descriptions.length'), 1);
+        done2();
+      });
+    });
+  });
+
   test('it should correctly save deeply nested has many relations', async function(assert) {
     assert.expect(1);
 
