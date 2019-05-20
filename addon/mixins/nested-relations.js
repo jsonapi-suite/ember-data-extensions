@@ -118,7 +118,9 @@ const addToIncludes = function(payload, includedRecords) {
 
 const hasManyData = function(parent, relationName, relatedRecords, subRelations, manyToManyDeleted, includedRecords) {
   let payloads = [];
-  savedRecords[relationName] = [];
+  if (savedRecords[relationName] === undefined) {
+    savedRecords[relationName] = [];
+  }
 
   relatedRecords.forEach((relatedRecord) => {
     let payload = jsonapiPayload(relatedRecord, manyToManyDeleted && manyToManyDeleted.includes(relatedRecord));
