@@ -197,8 +197,9 @@ export default Mixin.create({
 
     let json = this._super(...arguments);
     let includedRecords = [];
+    let adapterOptions = snapshot.adapterOptions || {};
 
-    if (snapshot.record.get('emberDataExtensions') !== false) {
+    if (adapterOptions.emberDataExtensions || snapshot.record.get('emberDataExtensions') !== false) {
       delete(json.data.relationships);
       delete(json.data.attributes);
 
