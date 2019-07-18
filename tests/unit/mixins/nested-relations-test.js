@@ -149,6 +149,65 @@ module('Unit | Mixin | nested-relations', function(hooks) {
     });
   });
 
+  test('it serializes relationships if ember data ext is enabled', function(assert) {
+    run(() => {
+      let author = store.createRecord('author', { name: 'Joe Author' });
+      let post = store.createRecord('post', { title: 'test post', 'author': author });
+      post.set('emberDataExtensions', false);
+      let json = serialize(post, { emberDataExtensions: true, relationships: 'author' });
+
+      let expectedJSON = {
+        data: {
+          attributes: {
+            title: "test post"
+          },
+          relationships: {
+            author: {
+              data: {
+                method: "create",
+                'temp-id': author.tempId(),
+                type: "authors"
+              }
+            }
+          },
+          type: "posts"
+        },
+        included: [
+          {
+            attributes: {
+              name: "Joe Author"
+            },
+            'temp-id': author.tempId(),
+            type: "authors"
+          }
+        ]
+      };
+
+      assert.deepEqual(json, expectedJSON, 'has correct json');
+    });
+  });
+
+  test('it does not serialize relationships if ember data ext is disabled', function(assert) {
+    run(() => {
+      let author = store.createRecord('author', { name: 'Joe Author' });
+      let post = store.createRecord('post', { title: 'test post', 'author': author });
+      post.set('emberDataExtensions', false);
+      let json = serialize(post, {});
+
+      let expectedJSON = {
+        data: {
+          type: 'posts',
+          attributes: {
+            'published-date': null,
+            title: 'test post'
+          }
+        }
+      };
+
+      assert.deepEqual(json, expectedJSON, 'has correct json');
+    });
+  });
+
   test('it respects custom keyForAttribute settings in serializer', function(assert) {
     run(() => {
       let date = new Date();
