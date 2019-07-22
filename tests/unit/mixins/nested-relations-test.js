@@ -45,6 +45,10 @@ const Post = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
 let TestSerializer = DS.JSONAPISerializer.extend(NestedRelationsMixin);
 
 const serialize = function(record, adapterOptions) {
+  // Enable sideposting for testing unless it is disabled explicitly.
+  if (adapterOptions.sideposting !== false) {
+    adapterOptions.sideposting = true;
+  }
   let snapshot = record._internalModel.createSnapshot({
     adapterOptions: adapterOptions
   });
@@ -153,8 +157,7 @@ module('Unit | Mixin | nested-relations', function(hooks) {
     run(() => {
       let author = store.createRecord('author', { name: 'Joe Author' });
       let post = store.createRecord('post', { title: 'test post', 'author': author });
-      post.set('emberDataExtensions', false);
-      let json = serialize(post, { emberDataExtensions: true, relationships: 'author' });
+      let json = serialize(post, { sideposting: true, relationships: 'author' });
 
       let expectedJSON = {
         data: {
@@ -191,8 +194,7 @@ module('Unit | Mixin | nested-relations', function(hooks) {
     run(() => {
       let author = store.createRecord('author', { name: 'Joe Author' });
       let post = store.createRecord('post', { title: 'test post', 'author': author });
-      post.set('emberDataExtensions', false);
-      let json = serialize(post, {});
+      let json = serialize(post, { sideposting: false });
 
       let expectedJSON = {
         data: {

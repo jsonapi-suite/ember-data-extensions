@@ -199,11 +199,9 @@ export default Mixin.create({
     let includedRecords = [];
     let adapterOptions = snapshot.adapterOptions || {};
 
-    if (adapterOptions.emberDataExtensions || snapshot.record.get('emberDataExtensions') !== false) {
+    if (adapterOptions.sideposting) {
       delete(json.data.relationships);
       delete(json.data.attributes);
-
-      let adapterOptions = snapshot.adapterOptions || {};
 
       let attributes = attributesFor(snapshot.record);
       if (isPresentObject(attributes)) {

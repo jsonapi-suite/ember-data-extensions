@@ -10,7 +10,12 @@ export default Mixin.create({
 
   actions: {
     submit(model) {
-      model.save({ adapterOptions: { relationships: { 'tags': {}, 'author': {} }}}).then((m) => {
+      model.save({
+        adapterOptions: {
+          sideposting: true,
+          relationships: { 'tags': {}, 'author': {} }
+        }
+      }).then((m) => {
         this.transitionTo('post', m.id);
       });
     },

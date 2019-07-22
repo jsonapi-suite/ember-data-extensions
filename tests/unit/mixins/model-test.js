@@ -107,7 +107,7 @@ module('Unit | Mixin | model', function(hooks) {
 
     let done2 = assert.async();
     run(() => {
-      post.save({ adapterOptions: { relationships: 'tags' } }).then((p) => {
+      post.save({ adapterOptions: { sideposting: true, relationships: 'tags' } }).then((p) => {
         assert.equal(p.get('tags.length'), 2);
         done2();
       });
@@ -173,7 +173,7 @@ module('Unit | Mixin | model', function(hooks) {
 
     let done2 = assert.async();
     run(() => {
-      post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } }).then(async (p) => {
+      post.save({ adapterOptions: { sideposting: true, relationships: ['tags', { tags: 'descriptions' }] } }).then(async (p) => {
         let tags = await p.tags;
         let descriptions = await tags.firstObject.descriptions;
         assert.equal(descriptions.length, 2);
@@ -247,7 +247,7 @@ module('Unit | Mixin | model', function(hooks) {
 
     let done2 = assert.async();
     run(() => {
-      post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } }).then((p) => {
+      post.save({ adapterOptions: { sideposting: true, relationships: ['tags', { tags: 'descriptions' }] } }).then((p) => {
         assert.equal(p.get('tags.length'), 2);
         assert.equal(p.get('tags.firstObject.descriptions.length'), 0);
         assert.equal(p.get('tags.lastObject.descriptions.length'), 1);
@@ -273,7 +273,7 @@ module('Unit | Mixin | model', function(hooks) {
 
     tag.set('descriptions', A([description]));
     post.set('tags', A([tag]));
-    await post.save({ adapterOptions: { relationships: ['tags', { tags: 'descriptions' }] } });
+    await post.save({ adapterOptions: { sideposting: true, relationships: ['tags', { tags: 'descriptions' }] } });
     assert.ok(true);
   });
 });
