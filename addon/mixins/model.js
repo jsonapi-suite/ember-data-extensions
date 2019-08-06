@@ -39,9 +39,9 @@ const defaultOptions = function(options) {
 };
 
 export default Mixin.create({
-  hasDirtyAttributes: computed('currentState.isDirty', 'markedForDestruction', 'markedForDeletion', function() {
+  hasDirtyAttributes: computed('currentState.isDirty', 'markedForDestruction', 'markedForDeletion', '_manyToOneDeleted.[]', function() {
     let original = this._super(...arguments);
-    return original || this.get('markedForDestruction') || this.get('markedForDeletion');
+    return original || this.get('markedForDestruction') || this.get('markedForDeletion') || this.get('_manyToOneDeleted.length') > 0;
   }),
 
   markedForDeletion: computed('_markedForDeletion', function() {
@@ -69,6 +69,27 @@ export default Mixin.create({
 
   unmarkForDestruction() {
     this.set('_markedForDestruction', false);
+  },
+
+  markManyToOneDeletion(relation) {
+    let deletedRelations = this.get('_manyToOneDeleted');
+
+    if (!deletedRelations) {
+      this.set('_manyToOneDeleted', A());
+      deletedRelations = this.get('_manyToOneDeleted')
+    }
+
+    if (!deletedRelations.includes(relation)) {
+      deletedRelations.pushObject(relation)
+    }
+  },
+
+  unmarkManyToOneDeletion(relation) {
+    return this.markedForManyToOneDeletion(relation) && this.get('_manyToOneDeleted').removeObject(relation)
+  },
+
+  markedForManyToOneDeletion(relation) {
+    return this.get('_manyToOneDeleted') && this.get('_manyToOneDeleted').includes(relation);
   },
 
   markManyToManyDeletion(relation, model) {
