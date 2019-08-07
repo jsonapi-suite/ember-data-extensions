@@ -1,6 +1,6 @@
 {
   "name": "ember-data-jsonapi-extensions",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "The default blueprint for ember-cli addons.",
   "directories": {
     "doc": "doc",
