@@ -8,6 +8,10 @@ View [official documentation](http://jsonapi-suite.github.io/ember-data-extensio
 
 `ember install ember-data-jsonapi-extensions`
 
+### Debugging
+
+Use [jsonapi-payload-explorer](https://veelenga.github.io/jsonapi-payload-explorer/) to debug and traverse requests/response.
+
 ### Nested Forms
 
 Run the dummy app to see nested forms in action. The following `Post` has an `Author` and many `Tags`:
