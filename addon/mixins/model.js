@@ -1,3 +1,4 @@
+import { readOnly } from '@ember/object/computed';
 import Mixin from '@ember/object/mixin';
 import { computed } from '@ember/object';
 import EmberObject from '@ember/object';
@@ -78,7 +79,7 @@ export default Mixin.create({
       deletedRelations.set(relation, A());
       defineProperty(
         this,
-        `manyToManyDeleted${relation}`, computed.readOnly(`_manyToManyDeleted.${relation}`)
+        `manyToManyDeleted${relation}`, readOnly(`_manyToManyDeleted.${relation}`)
       );
     }
 
