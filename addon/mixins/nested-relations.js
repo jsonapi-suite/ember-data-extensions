@@ -1,6 +1,6 @@
 import Mixin from '@ember/object/mixin';
 import { copy } from 'ember-copy';
-import { merge } from '@ember/polyfills';
+import { assign } from '@ember/polyfills';
 
 // This is for reference in our post-save promise
 // We need to unload these records after save, otherwise
@@ -177,7 +177,7 @@ const relationshipsDirective = function(value) {
       directive[value] = {};
     } else if(Array.isArray(value)) {
       value.forEach((key) => {
-        merge(directive, relationshipsDirective(key));
+        assign(directive, relationshipsDirective(key));
       });
     } else {
       Object.keys(value).forEach((key) => {
