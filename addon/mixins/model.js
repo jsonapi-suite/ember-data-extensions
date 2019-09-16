@@ -63,16 +63,16 @@ export default Mixin.create({
 
     if (!deletedRelations) {
       this.set('_manyToOneDeleted', A());
-      deletedRelations = this.get('_manyToOneDeleted')
+      deletedRelations = this.get('_manyToOneDeleted');
     }
 
     if (!deletedRelations.includes(relation)) {
-      deletedRelations.pushObject(relation)
+      deletedRelations.pushObject(relation);
     }
   },
 
   unmarkManyToOneDeletion(relation) {
-    return this.markedForManyToOneDeletion(relation) && this.get('_manyToOneDeleted').removeObject(relation)
+    return this.markedForManyToOneDeletion(relation) && this.get('_manyToOneDeleted').removeObject(relation);
   },
 
   markedForManyToOneDeletion(relation) {
