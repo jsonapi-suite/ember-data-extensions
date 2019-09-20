@@ -1,6 +1,7 @@
 import Mixin from '@ember/object/mixin';
 import { copy } from 'ember-copy';
 import { assign } from '@ember/polyfills';
+import { merge } from 'lodash/object';
 
 // This is for reference in our post-save promise
 // We need to unload these records after save, otherwise
@@ -105,14 +106,17 @@ const addToIncludes = function(payload, includedRecords) {
     return;
   }
 
-  const alreadyIncluded = includedRecords.find((includedRecord) =>
+  let match = includedRecords.find((includedRecord) =>
     includedPayload['type'] === includedRecord['type'] &&
     ((includedPayload['temp-id'] && includedPayload['temp-id'] === includedRecord['temp-id']) ||
       (includedPayload['id'] && includedPayload['id'] === includedRecord['id']))
-  ) !== undefined;
+  );
+  const alreadyIncluded = match !== undefined;
 
   if (!alreadyIncluded) {
     includedRecords.push(includedPayload);
+  } else {
+    merge(match, includedPayload);
   }
 };
 
