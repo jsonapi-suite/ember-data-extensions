@@ -17,7 +17,8 @@ const State = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
 
 const Author = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
   name: DS.attr('string'),
-  state: DS.belongsTo()
+  state: DS.belongsTo(),
+  genres: DS.hasMany('genre')
 });
 
 const User = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
@@ -26,7 +27,8 @@ const User = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
 
 const Tag = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
   name: DS.attr('string'),
-  creator: DS.belongsTo('user')
+  creator: DS.belongsTo('user'),
+  subject: DS.belongsTo('author')
 });
 
 const Genre = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
@@ -724,6 +726,35 @@ module('Unit | Mixin | nested-relations', function(hooks) {
         ]
       };
       assert.deepEqual(json, expectedJSON);
+    });
+  });
+
+  test('it should correctly merge relationships of a record', function(assert) {
+    run(() => {
+      let state = store.createRecord('state', { name: 'New York' });
+      let genre = store.createRecord('genre', { name: 'Maltese' });
+      let author = store.createRecord('author', { name: 'Joe Author', state, genres: [genre] });
+      let tag = store.createRecord('tag', { name: 'tag1', subject: author });
+      let post = store.createRecord('post', { title: 'test post', tags: [tag], author });
+      let json = serialize(post, { sideposting: true, relationships: [{ tags: { subject: 'genres' } }, { author: 'state' }] });
+
+      let includedAuthor = json.included.find((datum) => datum.type === 'authors');
+      assert.ok(includedAuthor.relationships.state.data);
+      assert.ok(includedAuthor.relationships.genres.data);
+    });
+  });
+
+  test('it should correctly merge relationships of a record in reverse order', function(assert) {
+    run(() => {
+      let state = store.createRecord('state', { name: 'New York' });
+      let author = store.createRecord('author', { name: 'Joe Author', state });
+      let tag = store.createRecord('tag', { name: 'tag1', subject: author });
+      let post = store.createRecord('post', { title: 'test post', tags: [tag], author });
+      let json = serialize(post, { sideposting: true, relationships: [{ author: 'state' }, { tags: { subject: 'genres' } }] });
+
+      let includedAuthor = json.included.find((datum) => datum.type === 'authors');
+      assert.ok(includedAuthor.relationships.state.data);
+      assert.ok(includedAuthor.relationships.genres.data);
     });
   });
 });
