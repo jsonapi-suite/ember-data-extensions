@@ -1,4 +1,7 @@
-import Ember from 'ember';
+import Mixin from "@ember/object/mixin";
+import { copy } from "@ember/object/internals";
+import { merge } from "@ember/polyfills";
+import { singularize } from "ember-inflector";
 
 // This is for reference in our post-save promise
 // We need to unload these records after save, otherwise
@@ -8,20 +11,30 @@ import Ember from 'ember';
 let savedRecords = {};
 
 const iterateRelations = function(record, relations, callback) {
-  Object.keys(relations).forEach((relationName) => {
+  Object.keys(relations).forEach(relationName => {
     let subRelations = relations[relationName];
 
-    let metadata          = record.relationshipFor(relationName);
-    let kind              = metadata.kind;
-    let relatedRecord     = record.get(relationName);
-    let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(relationName);
+    let metadata = record.relationshipFor(relationName);
+    let kind = metadata.kind;
+    let relatedRecord = record.get(relationName);
+    let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(
+      relationName
+    );
+    let isManyToOneDelete = record.markedForManyToOneDeletion(relationName);
 
     if (metadata.options.async !== false) {
-      relatedRecord = relatedRecord.get('content');
+      relatedRecord = relatedRecord.get("content");
     }
 
     if (relatedRecord) {
-      callback(relationName, kind, relatedRecord, subRelations, manyToManyDeleted);
+      callback(
+        relationName,
+        kind,
+        relatedRecord,
+        subRelations,
+        manyToManyDeleted,
+        isManyToOneDelete
+      );
     }
   });
 };
@@ -36,10 +49,10 @@ const attributesFor = function(record) {
   let changes = record.changedAttributes();
   let serializer = record.store.serializerFor(record.constructor.modelName);
 
-  record.eachAttribute((name/* meta */) => {
+  record.eachAttribute((name /* meta */) => {
     let keyName = serializer.keyForAttribute(name);
 
-    if (record.get('isNew') || changes[name]) {
+    if (record.get("isNew") || changes[name]) {
       let value = record.get(name);
 
       if (value !== undefined) {
@@ -48,10 +61,25 @@ const attributesFor = function(record) {
     }
   });
 
+  record.eachRelationship((name, meta) => {
+    if (meta.options.serializeAsAttributeId) {
+      if (meta.kind === "hasMany") {
+        const keyName = serializer.keyForAttribute(`${singularize(name)}Ids`);
+        attrs[keyName] = record
+          .get(name)
+          .getEach("id")
+          .compact();
+      } else {
+        const keyName = serializer.keyForAttribute(`${name}Id`);
+        attrs[keyName] = record.get(`${name}.id`) || null;
+      }
+    }
+  });
+
   return attrs;
 };
 
-const jsonapiPayload = function(record, isManyToManyDelete) {
+const jsonapiPayload = function(record, relationshipMarkedForDeletion) {
   let attributes = attributesFor(record);
 
   let payload = { type: record.jsonapiType() };
@@ -60,18 +88,15 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
     payload.attributes = attributes;
   }
 
-  if (record.get('isNew')) {
-    payload['temp-id'] = record.tempId();
-    payload['method'] = 'create';
-  }
-  else if (record.get('markedForDestruction')) {
-    payload['method'] = 'destroy';
-  }
-  else if (record.get('markedForDeletion') || isManyToManyDelete) {
-    payload['method'] = 'disassociate';
-  }
-  else if (record.get('currentState.isDirty')) {
-    payload['method'] = 'update';
+  if (record.get("isNew")) {
+    payload["temp-id"] = record.tempId();
+    payload["method"] = "create";
+  } else if (record.get("markedForDestruction")) {
+    payload["method"] = "destroy";
+  } else if (record.get("markedForDeletion") || relationshipMarkedForDeletion) {
+    payload["method"] = "disassociate";
+  } else if (record.get("currentState.isDirty")) {
+    payload["method"] = "update";
   }
 
   if (record.id) {
@@ -82,16 +107,16 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
 };
 
 const payloadForInclude = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
-  delete(payloadCopy.method);
+  let payloadCopy = copy(payload, true);
+  delete payloadCopy.method;
 
   return payloadCopy;
 };
 
 const payloadForRelationship = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
-  delete(payloadCopy.attributes);
-  delete(payloadCopy.relationships);
+  let payloadCopy = copy(payload, true);
+  delete payloadCopy.attributes;
+  delete payloadCopy.relationships;
 
   return payloadCopy;
 };
@@ -99,27 +124,43 @@ const payloadForRelationship = function(payload) {
 const addToIncludes = function(payload, includedRecords) {
   let includedPayload = payloadForInclude(payload);
 
-  if (!includedPayload.attributes && !isPresentObject(includedPayload.relationships)) {
+  if (
+    !includedPayload.attributes &&
+    !isPresentObject(includedPayload.relationships)
+  ) {
     return;
   }
 
-  const alreadyIncluded = includedRecords.find((includedRecord) =>
-    includedPayload['type'] === includedRecord['type'] &&
-    ((includedPayload['temp-id'] && includedPayload['temp-id'] === includedRecord['temp-id']) ||
-      (includedPayload['id'] && includedPayload['id'] === includedRecord['id']))
-  ) !== undefined;
+  const alreadyIncluded =
+    includedRecords.find(
+      includedRecord =>
+        includedPayload["type"] === includedRecord["type"] &&
+        ((includedPayload["temp-id"] &&
+          includedPayload["temp-id"] === includedRecord["temp-id"]) ||
+          (includedPayload["id"] &&
+            includedPayload["id"] === includedRecord["id"]))
+    ) !== undefined;
 
   if (!alreadyIncluded) {
     includedRecords.push(includedPayload);
   }
 };
 
-const hasManyData = function(relationName, relatedRecords, subRelations, manyToManyDeleted, includedRecords) {
+const hasManyData = function(
+  relationName,
+  relatedRecords,
+  subRelations,
+  manyToManyDeleted,
+  includedRecords
+) {
   let payloads = [];
   savedRecords[relationName] = [];
 
-  relatedRecords.forEach((relatedRecord) => {
-    let payload = jsonapiPayload(relatedRecord, manyToManyDeleted && manyToManyDeleted.includes(relatedRecord));
+  relatedRecords.forEach(relatedRecord => {
+    let payload = jsonapiPayload(
+      relatedRecord,
+      manyToManyDeleted && manyToManyDeleted.includes(relatedRecord)
+    );
     processRelationships(subRelations, payload, relatedRecord, includedRecords);
     addToIncludes(payload, includedRecords);
 
@@ -129,21 +170,46 @@ const hasManyData = function(relationName, relatedRecords, subRelations, manyToM
   return { data: payloads };
 };
 
-const belongsToData = function(relatedRecord, subRelations, includedRecords) {
-  let payload = jsonapiPayload(relatedRecord);
+const belongsToData = function(
+  relatedRecord,
+  subRelations,
+  isManyToOneDelete,
+  includedRecords
+) {
+  let payload = jsonapiPayload(relatedRecord, isManyToOneDelete);
   processRelationships(subRelations, payload, relatedRecord, includedRecords);
   addToIncludes(payload, includedRecords);
 
   return { data: payloadForRelationship(payload) };
 };
 
-const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, includedRecords, callback) {
+const processRelationship = function(
+  name,
+  kind,
+  relationData,
+  subRelations,
+  manyToManyDeleted,
+  isManyToOneDelete,
+  includedRecords,
+  callback
+) {
   let payload = null;
 
-  if (kind === 'hasMany') {
-    payload = hasManyData(name, relationData, subRelations, manyToManyDeleted, includedRecords);
+  if (kind === "hasMany") {
+    payload = hasManyData(
+      name,
+      relationData,
+      subRelations,
+      manyToManyDeleted,
+      includedRecords
+    );
   } else {
-    payload = belongsToData(relationData, subRelations, includedRecords);
+    payload = belongsToData(
+      relationData,
+      subRelations,
+      isManyToOneDelete,
+      includedRecords
+    );
   }
 
   if (payload && payload.data) {
@@ -151,17 +217,44 @@ const processRelationship = function(name, kind, relationData, subRelations, man
   }
 };
 
-const processRelationships = function(relationshipHash, jsonData, record, includedRecords) {
+const processRelationships = function(
+  relationshipHash,
+  jsonData,
+  record,
+  includedRecords
+) {
   if (isPresentObject(relationshipHash)) {
     jsonData.relationships = {};
 
-    iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted) => {
-      processRelationship(name, kind, related, subRelations, manyToManyDeleted, includedRecords, (payload) => {
-        let serializer = record.store.serializerFor(record.constructor.modelName);
-        let serializedName = serializer.keyForRelationship(name);
-        jsonData.relationships[serializedName] = payload;
-      });
-    });
+    iterateRelations(
+      record,
+      relationshipHash,
+      (
+        name,
+        kind,
+        related,
+        subRelations,
+        manyToManyDeleted,
+        isManyToOneDelete
+      ) => {
+        processRelationship(
+          name,
+          kind,
+          related,
+          subRelations,
+          manyToManyDeleted,
+          isManyToOneDelete,
+          includedRecords,
+          payload => {
+            let serializer = record.store.serializerFor(
+              record.constructor.modelName
+            );
+            let serializedName = serializer.keyForRelationship(name);
+            jsonData.relationships[serializedName] = payload;
+          }
+        );
+      }
+    );
   }
 };
 
@@ -169,14 +262,14 @@ const relationshipsDirective = function(value) {
   let directive = {};
 
   if (value) {
-    if (typeof(value) === 'string') {
+    if (typeof value === "string") {
       directive[value] = {};
-    } else if(Array.isArray(value)) {
-      value.forEach((key) => {
-        Ember.merge(directive, relationshipsDirective(key));
+    } else if (Array.isArray(value)) {
+      value.forEach(key => {
+        merge(directive, relationshipsDirective(key));
       });
     } else {
-      Object.keys(value).forEach((key) => {
+      Object.keys(value).forEach(key => {
         directive[key] = relationshipsDirective(value[key]);
       });
     }
@@ -187,16 +280,16 @@ const relationshipsDirective = function(value) {
   return directive;
 };
 
-export default Ember.Mixin.create({
-  serialize(snapshot/*, options */) {
+export default Mixin.create({
+  serialize(snapshot /*, options */) {
     savedRecords = [];
 
     let json = this._super(...arguments);
     let includedRecords = [];
 
-    if (snapshot.record.get('emberDataExtensions') !== false) {
-      delete(json.data.relationships);
-      delete(json.data.attributes);
+    if (snapshot.record.get("emberDataExtensions") !== false) {
+      delete json.data.relationships;
+      delete json.data.attributes;
 
       let adapterOptions = snapshot.adapterOptions || {};
 
@@ -210,7 +303,7 @@ export default Ember.Mixin.create({
       }
 
       if (adapterOptions.attributes === false) {
-        delete(json.data.attributes);
+        delete json.data.attributes;
       }
 
       if (adapterOptions.attributes) {
@@ -218,17 +311,22 @@ export default Ember.Mixin.create({
           json.data.attributes = {};
         }
 
-        Object.keys(adapterOptions.attributes).forEach((k) => {
+        Object.keys(adapterOptions.attributes).forEach(k => {
           json.data.attributes[k] = adapterOptions.attributes[k];
         });
       }
 
       let relationships = relationshipsDirective(adapterOptions.relationships);
-      processRelationships(relationships, json.data, snapshot.record, includedRecords);
+      processRelationships(
+        relationships,
+        json.data,
+        snapshot.record,
+        includedRecords
+      );
       if (includedRecords && includedRecords.length > 0) {
         json.included = includedRecords;
       }
-      snapshot.record.set('__recordsJustSaved', savedRecords);
+      snapshot.record.set("__recordsJustSaved", savedRecords);
     }
 
     return json;
