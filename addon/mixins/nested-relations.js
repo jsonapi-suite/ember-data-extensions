@@ -14,12 +14,10 @@ const iterateRelations = function(record, relations, callback) {
   Object.keys(relations).forEach(relationName => {
     let subRelations = relations[relationName];
 
-    let metadata = record.relationshipFor(relationName);
-    let kind = metadata.kind;
-    let relatedRecord = record.get(relationName);
-    let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(
-      relationName
-    );
+    let metadata          = record.relationshipFor(relationName);
+    let kind              = metadata.kind;
+    let relatedRecord     = record.get(relationName);
+    let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(relationName);
     let isManyToOneDelete = record.markedForManyToOneDeletion(relationName);
 
     if (metadata.options.async !== false) {
@@ -27,14 +25,7 @@ const iterateRelations = function(record, relations, callback) {
     }
 
     if (relatedRecord) {
-      callback(
-        relationName,
-        kind,
-        relatedRecord,
-        subRelations,
-        manyToManyDeleted,
-        isManyToOneDelete
-      );
+      callback(relationName, kind, relatedRecord, subRelations, manyToManyDeleted, isManyToOneDelete);
     }
   });
 };
@@ -88,15 +79,18 @@ const jsonapiPayload = function(record, relationshipMarkedForDeletion) {
     payload.attributes = attributes;
   }
 
-  if (record.get("isNew")) {
-    payload["temp-id"] = record.tempId();
-    payload["method"] = "create";
-  } else if (record.get("markedForDestruction")) {
-    payload["method"] = "destroy";
-  } else if (record.get("markedForDeletion") || relationshipMarkedForDeletion) {
-    payload["method"] = "disassociate";
-  } else if (record.get("currentState.isDirty")) {
-    payload["method"] = "update";
+  if (record.get('isNew')) {
+    payload['temp-id'] = record.tempId();
+    payload['method'] = 'create';
+  }
+  else if (record.get('markedForDestruction')) {
+    payload['method'] = 'destroy';
+  }
+  else if (record.get('markedForDeletion') || relationshipMarkedForDeletion) {
+    payload['method'] = 'disassociate';
+  }
+  else if (record.get('currentState.isDirty')) {
+    payload['method'] = 'update';
   }
 
   if (record.id) {
@@ -108,15 +102,15 @@ const jsonapiPayload = function(record, relationshipMarkedForDeletion) {
 
 const payloadForInclude = function(payload) {
   let payloadCopy = copy(payload, true);
-  delete payloadCopy.method;
+  delete(payloadCopy.method);
 
   return payloadCopy;
 };
 
 const payloadForRelationship = function(payload) {
   let payloadCopy = copy(payload, true);
-  delete payloadCopy.attributes;
-  delete payloadCopy.relationships;
+  delete(payloadCopy.attributes);
+  delete(payloadCopy.relationships);
 
   return payloadCopy;
 };
@@ -170,12 +164,7 @@ const hasManyData = function(
   return { data: payloads };
 };
 
-const belongsToData = function(
-  relatedRecord,
-  subRelations,
-  isManyToOneDelete,
-  includedRecords
-) {
+const belongsToData = function(relatedRecord, subRelations, isManyToOneDelete, includedRecords) {
   let payload = jsonapiPayload(relatedRecord, isManyToOneDelete);
   processRelationships(subRelations, payload, relatedRecord, includedRecords);
   addToIncludes(payload, includedRecords);
@@ -183,16 +172,7 @@ const belongsToData = function(
   return { data: payloadForRelationship(payload) };
 };
 
-const processRelationship = function(
-  name,
-  kind,
-  relationData,
-  subRelations,
-  manyToManyDeleted,
-  isManyToOneDelete,
-  includedRecords,
-  callback
-) {
+const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, isManyToOneDelete, includedRecords, callback) {
   let payload = null;
 
   if (kind === "hasMany") {
@@ -204,12 +184,7 @@ const processRelationship = function(
       includedRecords
     );
   } else {
-    payload = belongsToData(
-      relationData,
-      subRelations,
-      isManyToOneDelete,
-      includedRecords
-    );
+    payload = belongsToData(relationData, subRelations, isManyToOneDelete, includedRecords);
   }
 
   if (payload && payload.data) {
@@ -226,35 +201,13 @@ const processRelationships = function(
   if (isPresentObject(relationshipHash)) {
     jsonData.relationships = {};
 
-    iterateRelations(
-      record,
-      relationshipHash,
-      (
-        name,
-        kind,
-        related,
-        subRelations,
-        manyToManyDeleted,
-        isManyToOneDelete
-      ) => {
-        processRelationship(
-          name,
-          kind,
-          related,
-          subRelations,
-          manyToManyDeleted,
-          isManyToOneDelete,
-          includedRecords,
-          payload => {
-            let serializer = record.store.serializerFor(
-              record.constructor.modelName
-            );
-            let serializedName = serializer.keyForRelationship(name);
-            jsonData.relationships[serializedName] = payload;
-          }
-        );
-      }
-    );
+    iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted, isManyToOneDelete) => {
+      processRelationship(name, kind, related, subRelations, manyToManyDeleted, isManyToOneDelete, includedRecords, (payload) => {
+        let serializer = record.store.serializerFor(record.constructor.modelName);
+        let serializedName = serializer.keyForRelationship(name);
+        jsonData.relationships[serializedName] = payload;
+      });
+    });
   }
 };
 
@@ -264,8 +217,8 @@ const relationshipsDirective = function(value) {
   if (value) {
     if (typeof value === "string") {
       directive[value] = {};
-    } else if (Array.isArray(value)) {
-      value.forEach(key => {
+    } else if(Array.isArray(value)) {
+      value.forEach((key) => {
         merge(directive, relationshipsDirective(key));
       });
     } else {
@@ -281,7 +234,7 @@ const relationshipsDirective = function(value) {
 };
 
 export default Mixin.create({
-  serialize(snapshot /*, options */) {
+  serialize(snapshot/*, options */) {
     savedRecords = [];
 
     let json = this._super(...arguments);
