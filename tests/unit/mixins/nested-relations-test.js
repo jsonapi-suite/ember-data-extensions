@@ -152,6 +152,31 @@ test('it serializes basic attributes correctly', function(assert) {
   assert.deepEqual(json, expectedJSON, 'has correct json');
 });
 
+test('it uses transformJsonapiAttrs to modify attributes', function(assert) {
+  let post = store.createRecord('post', { title: 'test post' });
+
+  post.transformJsonapiAttrs = function(attrs) {
+    return {
+      titleUpcase: attrs.title.toUpperCase(),
+      publishedDate: this.get('publishedDate')
+    };
+  };
+
+  let json = serialize(post, {});
+
+  let expectedJSON = {
+    data: {
+      type: 'posts',
+      attributes: {
+        titleUpcase: 'test post'.toUpperCase(),
+        publishedDate: post.get('publishedDate')
+      }
+    }
+  };
+
+  assert.deepEqual(json, expectedJSON, 'has correct json');
+});
+
 test('it respects custom keyForAttribute settings in serializer', function(assert) {
   let date = new Date();
   let post = store.createRecord('post', { publishedDate: date });
