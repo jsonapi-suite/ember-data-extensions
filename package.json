@@ -1,7 +1,7 @@
 {
   "name": "ember-data-jsonapi-extensions",
   "version": "0.7.0",
-  "description": "The default blueprint for ember-cli addons.",
+  "description": "An ember-cli addon that adds support for jsonapi_compliable/graphiti features to ember-data Objects",
   "directories": {
     "doc": "doc",
     "test": "tests"
@@ -13,7 +13,7 @@
   },
   "repository": "https://github.com/jsonapi-suite/ember-data-extensions",
   "engines": {
-    "node": ">= 0.10.0"
+    "node": ">= 7.10.1"
   },
   "author": "",
   "license": "MIT",
