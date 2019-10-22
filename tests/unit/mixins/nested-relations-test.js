@@ -39,7 +39,8 @@ const Post = DS.Model.extend(ModelMixin, NestedRelationsMixin, {
   genre: DS.belongsTo(),
   author: DS.belongsTo(),
   asyncFalseAuthor: DS.belongsTo('author', { async: false }),
-  tags: DS.hasMany()
+  tags: DS.hasMany(),
+  tagsSerializedAsIdsInAttributes: DS.hasMany('tags', { serializeIdsInAttributes: true })
 });
 
 let TestSerializer = DS.JSONAPISerializer.extend(NestedRelationsMixin);
@@ -109,6 +110,41 @@ const seedPostWithTags = function() {
       id: 1,
       relationships: {
         tags: {
+          data: [
+            { type: 'tags', id: 2 },
+            { type: 'tags', id: 3 },
+            { type: 'tags', id: 4 }
+          ]
+        }
+      }
+    },
+    included: [
+      {
+        type: 'tags',
+        id: 2,
+        attributes: { name: 'tag1' }
+      },
+      {
+        type: 'tags',
+        id: 3,
+        attributes: { name: 'tag2' }
+      },
+      {
+        type: 'tags',
+        id: 4,
+        attributes: { name: 'tag3' }
+      }
+    ]
+  });
+};
+
+const seedPostsWithTagsSerializedAsIdsInAttributes = function() {
+  store.pushPayload({
+    data: {
+      type: 'posts',
+      id: 1,
+      relationships: {
+        'tags-serialized-as-ids-in-attributes': {
           data: [
             { type: 'tags', id: 2 },
             { type: 'tags', id: 3 },
@@ -368,6 +404,36 @@ test('one-to-many deletion/destruction', function(assert) {
   };
   assert.deepEqual(json, expectedJSON, 'it has correct json');
 });
+
+test('serializes has-many using serializeIdsInAttributes', function(assert) {
+  seedPostsWithTagsSerializedAsIdsInAttributes();
+
+  let post = store.peekRecord('post', 1);
+  post.get('tagsSerializedAsIdsInAttributes').removeObject(post.get('tagsSerializedAsIdsInAttributes').objectAt(0));
+
+  let json = serialize(post, { relationships: 'tagsSerializedAsIdsInAttributes' });
+
+  let expectedJSON = {
+    data: {
+      id: '1',
+      type: 'posts',
+      attributes: {
+        tags_serialized_as_ids_in_attributes_ids: ['3' , '4']
+      },
+      relationships: {
+        'tags-serialized-as-ids-in-attributes': {
+          data: [
+            { type: 'tags', id: '3' },
+            { type: 'tags', id: '4' },
+          ]
+        }
+      }
+    }
+  };
+
+  assert.deepEqual(json, expectedJSON, 'has correct json');
+});
+
 
 test('relationship specified but not present', function(assert) {
   let post = store.createRecord('post');
