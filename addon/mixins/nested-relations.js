@@ -33,7 +33,7 @@ const isPresentObject = function(val) {
   return val && Object.keys(val).length > 0;
 };
 
-const attributesFor = function(record) {
+const attributesFor = function(record, relationshipsHash) {
   let attrs = {};
 
   let changes = record.changedAttributes();
@@ -50,6 +50,17 @@ const attributesFor = function(record) {
       }
     }
   });
+
+  if (relationshipsHash !== undefined) {
+    iterateRelations(record, relationshipsHash, (name, kind, related, subRelations, manyToManyDeleted) => {
+      let metadata = record.relationshipFor(name);
+
+      if (metadata.options && metadata.options.serializeIdsInAttributes) {
+        let keyName = `${serializer.keyForAttribute(name)}_ids`;
+        attrs[keyName] = related.mapBy('id');
+      }
+    });
+  }
 
   return attrs;
 };
@@ -190,7 +201,7 @@ const relationshipsDirective = function(value) {
   return directive;
 };
 
-export default Mixin.create({
+export default Ember.Mixin.create({
   serialize(snapshot/*, options */) {
     savedRecords = [];
 
@@ -203,7 +214,9 @@ export default Mixin.create({
 
       let adapterOptions = snapshot.adapterOptions || {};
 
-      let attributes = attributesFor(snapshot.record);
+      let relationships = relationshipsDirective(adapterOptions.relationships);
+
+      let attributes = attributesFor(snapshot.record, relationships);
       if (isPresentObject(attributes)) {
         json.data.attributes = attributes;
       }
@@ -226,7 +239,6 @@ export default Mixin.create({
         });
       }
 
-      let relationships = relationshipsDirective(adapterOptions.relationships);
       processRelationships(relationships, json.data, snapshot.record, includedRecords);
       if (includedRecords && includedRecords.length > 0) {
         json.included = includedRecords;
