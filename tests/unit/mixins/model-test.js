@@ -1,8 +1,9 @@
-import Ember from 'ember';
 import DS from 'ember-data';
 import ModelMixin from 'ember-data-extensions/mixins/model';
 import moduleForAcceptance from '../../../tests/helpers/module-for-acceptance';
 import getOwner from '../../../tests/helpers/get-owner';
+import { run } from '@ember/runloop';
+import { test } from 'qunit';
 
 let store = null;
 let TestStore = DS.Store.extend();
@@ -43,7 +44,7 @@ const seedPost = function() {
 };
 
 test('#hasDirtyAttributes', function(assert) {
-  Ember.run(() => {
+  run(() => {
     let post = store.createRecord('post');
     assert.ok(post.get('hasDirtyAttributes'), 'should be true when new record');
     post = seedPost();
@@ -100,7 +101,7 @@ test('resetting relations when only sending dirty relations', function(assert) {
   let post = server.create('post');
   post.createTag({ name: 'tag1' });
   post.createTag({ name: 'tag2' });
-  Ember.run(() => {
+  run(() => {
     store.pushPayload({
       data: {
         type: 'posts',
@@ -126,7 +127,7 @@ test('resetting relations when only sending dirty relations', function(assert) {
   post.set('tags.firstObject.name', 'tag1 changed');
 
   let done2 = assert.async();
-  Ember.run(() => {
+  run(() => {
     post.save({ adapterOptions: { relationships: 'tags' } }).then((p) => {
       assert.equal(p.get('tags.length'), 2);
       done2();
