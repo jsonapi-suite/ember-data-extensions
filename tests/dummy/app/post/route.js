@@ -1,7 +1,7 @@
-import Ember from 'ember';
+import Route from '@ember/routing/route';
 
-export default Ember.Route.extend({
+export default Route.extend({
   model(params) {
-    return this.store.peekRecord('post', params.postId);
+    return this.store.peekRecord('post', params.post_id);
   }
 });

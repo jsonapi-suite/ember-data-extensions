@@ -1,4 +1,6 @@
-import Ember from 'ember';
+import Mixin from '@ember/object/mixin';
+import { copy } from '@ember/object/internals';
+import { merge } from '@ember/polyfills';
 
 // This is for reference in our post-save promise
 // We need to unload these records after save, otherwise
@@ -15,13 +17,14 @@ const iterateRelations = function(record, relations, callback) {
     let kind              = metadata.kind;
     let relatedRecord     = record.get(relationName);
     let manyToManyDeleted = record.manyToManyMarkedForDeletionModels(relationName);
+    let isManyToOneDelete = record.markedForManyToOneDeletion(relationName);
 
     if (metadata.options.async !== false) {
       relatedRecord = relatedRecord.get('content');
     }
 
     if (relatedRecord) {
-      callback(relationName, kind, relatedRecord, subRelations, manyToManyDeleted);
+      callback(relationName, kind, relatedRecord, subRelations, manyToManyDeleted, isManyToOneDelete);
     }
   });
 };
@@ -51,7 +54,7 @@ const attributesFor = function(record) {
   return attrs;
 };
 
-const jsonapiPayload = function(record, isManyToManyDelete) {
+const jsonapiPayload = function(record, relationshipMarkedForDeletion) {
   let attributes = attributesFor(record);
 
   let payload = { type: record.jsonapiType() };
@@ -67,7 +70,7 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
   else if (record.get('markedForDestruction')) {
     payload['method'] = 'destroy';
   }
-  else if (record.get('markedForDeletion') || isManyToManyDelete) {
+  else if (record.get('markedForDeletion') || relationshipMarkedForDeletion) {
     payload['method'] = 'disassociate';
   }
   else if (record.get('currentState.isDirty')) {
@@ -82,14 +85,14 @@ const jsonapiPayload = function(record, isManyToManyDelete) {
 };
 
 const payloadForInclude = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
+  let payloadCopy = copy(payload, true);
   delete(payloadCopy.method);
 
   return payloadCopy;
 };
 
 const payloadForRelationship = function(payload) {
-  let payloadCopy = Ember.copy(payload, true);
+  let payloadCopy = copy(payload, true);
   delete(payloadCopy.attributes);
   delete(payloadCopy.relationships);
 
@@ -129,21 +132,21 @@ const hasManyData = function(relationName, relatedRecords, subRelations, manyToM
   return { data: payloads };
 };
 
-const belongsToData = function(relatedRecord, subRelations, includedRecords) {
-  let payload = jsonapiPayload(relatedRecord);
+const belongsToData = function(relatedRecord, subRelations, isManyToOneDelete, includedRecords) {
+  let payload = jsonapiPayload(relatedRecord, isManyToOneDelete);
   processRelationships(subRelations, payload, relatedRecord, includedRecords);
   addToIncludes(payload, includedRecords);
 
   return { data: payloadForRelationship(payload) };
 };
 
-const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, includedRecords, callback) {
+const processRelationship = function(name, kind, relationData, subRelations, manyToManyDeleted, isManyToOneDelete, includedRecords, callback) {
   let payload = null;
 
   if (kind === 'hasMany') {
     payload = hasManyData(name, relationData, subRelations, manyToManyDeleted, includedRecords);
   } else {
-    payload = belongsToData(relationData, subRelations, includedRecords);
+    payload = belongsToData(relationData, subRelations, isManyToOneDelete, includedRecords);
   }
 
   if (payload && payload.data) {
@@ -155,8 +158,8 @@ const processRelationships = function(relationshipHash, jsonData, record, includ
   if (isPresentObject(relationshipHash)) {
     jsonData.relationships = {};
 
-    iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted) => {
-      processRelationship(name, kind, related, subRelations, manyToManyDeleted, includedRecords, (payload) => {
+    iterateRelations(record, relationshipHash, (name, kind, related, subRelations, manyToManyDeleted, isManyToOneDelete) => {
+      processRelationship(name, kind, related, subRelations, manyToManyDeleted, isManyToOneDelete, includedRecords, (payload) => {
         let serializer = record.store.serializerFor(record.constructor.modelName);
         let serializedName = serializer.keyForRelationship(name);
         jsonData.relationships[serializedName] = payload;
@@ -173,7 +176,7 @@ const relationshipsDirective = function(value) {
       directive[value] = {};
     } else if(Array.isArray(value)) {
       value.forEach((key) => {
-        Ember.merge(directive, relationshipsDirective(key));
+        merge(directive, relationshipsDirective(key));
       });
     } else {
       Object.keys(value).forEach((key) => {
@@ -187,7 +190,7 @@ const relationshipsDirective = function(value) {
   return directive;
 };
 
-export default Ember.Mixin.create({
+export default Mixin.create({
   serialize(snapshot/*, options */) {
     savedRecords = [];
 
