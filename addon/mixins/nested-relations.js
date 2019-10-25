@@ -51,7 +51,7 @@ const attributesFor = function(record) {
     }
   });
 
-  return attrs;
+  return record.transformJsonapiAttrs ? record.transformJsonapiAttrs(attrs) : attrs;
 };
 
 const jsonapiPayload = function(record, relationshipMarkedForDeletion) {
