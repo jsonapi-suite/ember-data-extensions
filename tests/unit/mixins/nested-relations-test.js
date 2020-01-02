@@ -336,7 +336,7 @@ module('Unit | Mixin | nested-relations', function(hooks) {
       seedPostWithAuthor();
 
       let post = store.peekRecord('post', 1);
-      post.get('author').set('markedForDeletion', true);
+      post.get('author').set('_markedForDeletion', true);
 
       let json = serialize(post, { attributes: false, relationships: 'author' });
       let expectedJSON = {
@@ -364,7 +364,7 @@ module('Unit | Mixin | nested-relations', function(hooks) {
       seedPostWithAuthor();
 
       let post = store.peekRecord('post', 1);
-      post.get('author').set('markedForDestruction', true);
+      post.get('author').set('_markedForDestruction', true);
 
       let json = serialize(post, { attributes: false, relationships: 'author' });
       let expectedJSON = {
@@ -425,8 +425,8 @@ module('Unit | Mixin | nested-relations', function(hooks) {
     run(() => {
       seedPostWithTags();
       let post = store.peekRecord('post', 1);
-      post.get('tags').objectAt(1).set('markedForDeletion', true);
-      post.get('tags').objectAt(2).set('markedForDestruction', true);
+      post.get('tags').objectAt(1).set('_markedForDeletion', true);
+      post.get('tags').objectAt(2).set('_markedForDestruction', true);
       let json = serialize(post, { attributes: false, relationships: 'tags' });
       let expectedJSON = {
         data: {
