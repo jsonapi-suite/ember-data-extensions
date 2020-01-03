@@ -31,10 +31,10 @@ module('Unit | Mixin | model', function(hooks) {
       assert.ok(post.get('hasDirtyAttributes'), 'should be true when persisted record with changes');
       post.set('title', 'test title');
       assert.notOk(post.get('hasDirtyAttributes'), 'should be false when attributes reset');
-      post.set('markedForDestruction', true);
+      post.set('_markedForDestruction', true);
       assert.ok(post.get('hasDirtyAttributes'), 'should be true when marked for destruction');
-      post.set('markedForDestruction', false);
-      post.set('markedForDeletion', true);
+      post.set('_markedForDestruction', false);
+      post.set('_markedForDeletion', true);
       assert.ok(post.get('hasDirtyAttributes'), 'should be true when marked for deletion');
     });
   });
