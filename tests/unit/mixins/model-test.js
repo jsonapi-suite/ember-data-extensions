@@ -276,4 +276,11 @@ module('Unit | Mixin | model', function(hooks) {
     await post.save({ adapterOptions: { sideposting: true, relationships: ['tags', { tags: 'descriptions' }] } });
     assert.ok(true);
   });
+
+  test('it should throw an error when marking an un-persisted record for destruction', async function(assert) {
+    let store = this.owner.lookup('service:store');
+    let post = store.createRecord('post');
+
+    assert.throws(() => post.markForDestruction(), 'cannot mark un-persisted record for destruction');
+  });
 });
