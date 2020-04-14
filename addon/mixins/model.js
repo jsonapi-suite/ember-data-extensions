@@ -61,6 +61,9 @@ export default Mixin.create({
   },
 
   markForDestruction() {
+    if (!this.id) {
+      throw new Error(`${this.constructor.modelName} should not be marked for destruction without id.`);
+    }
     this.set('_markedForDestruction', true);
   },
 
