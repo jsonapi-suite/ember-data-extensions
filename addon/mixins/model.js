@@ -24,7 +24,7 @@ const resetRelations = function(record) {
         if (isPresent(relation)) {
           relation.removeObject(r);
         }
-        r.set('_markedForDeletion', false);
+        r.set('markedForDeletion', false);
       }
     });
   });
