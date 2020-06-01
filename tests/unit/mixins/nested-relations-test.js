@@ -83,6 +83,44 @@ const seedPostWithAuthor = function() {
   });
 };
 
+const seedPostsWithSameAuthor = function() {
+  store.pushPayload({
+    data: [
+      {
+        type: 'posts',
+        id: 1,
+        relationships: {
+          author: {
+            data: {
+              type: 'authors',
+              id: 2
+            }
+          }
+        }
+      },
+      {
+        type: 'posts',
+        id: 2,
+        relationships: {
+          author: {
+            data: {
+              type: 'authors',
+              id: 2
+            }
+          }
+        }
+      }
+    ],
+    included: [
+      {
+        type: 'authors',
+        id: 2,
+        attributes: { name: 'Joe Author' }
+      }
+    ]
+  });
+};
+
 const seedPostWithTags = function() {
   store.pushPayload({
     data: {
@@ -333,12 +371,14 @@ module('Unit | Mixin | nested-relations', function(hooks) {
 
   test('it serializes many to one marked for deletion correctly', function(assert) {
     run(() => {
-      seedPostWithAuthor();
-      let post = store.peekRecord('post', 1);
-      post.markManyToOneDeletion('author');
+      seedPostsWithSameAuthor();
+      let post1 = store.peekRecord('post', 1);
+      let post2 = store.peekRecord('post', 2);
 
-      let json = serialize(post, { attributes: false, relationships: 'author' });
-      let expectedJSON = {
+      post1.markManyToOneDeletion('author');
+
+      let json1 = serialize(post1, { attributes: false, relationships: 'author' });
+      let expectedJSON1 = {
         data: {
           id: '1',
           type: 'posts',
@@ -354,7 +394,24 @@ module('Unit | Mixin | nested-relations', function(hooks) {
         }
       };
 
-      assert.deepEqual(json, expectedJSON, 'has correct json');
+      let json2 = serialize(post2, { attributes: false, relationships: 'author' });
+      let expectedJSON2 = {
+        data: {
+          id: '2',
+          type: 'posts',
+          relationships: {
+            author: {
+              data: {
+                id: '2',
+                type: 'authors'
+              }
+            }
+          }
+        }
+      };
+
+      assert.deepEqual(json1, expectedJSON1, 'post 1 has correct json');
+      assert.deepEqual(json2, expectedJSON2, 'post 2 has correct json');
     });
   });
 
