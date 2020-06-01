@@ -331,6 +331,33 @@ module('Unit | Mixin | nested-relations', function(hooks) {
     });
   });
 
+  test('it serializes many to one marked for deletion correctly', function(assert) {
+    run(() => {
+      seedPostWithAuthor();
+      let post = store.peekRecord('post', 1);
+      post.markManyToOneDeletion('author');
+
+      let json = serialize(post, { attributes: false, relationships: 'author' });
+      let expectedJSON = {
+        data: {
+          id: '1',
+          type: 'posts',
+          relationships: {
+            author: {
+              data: {
+                id: '2',
+                type: 'authors',
+                method: 'disassociate'
+              }
+            }
+          }
+        }
+      };
+
+      assert.deepEqual(json, expectedJSON, 'has correct json');
+    });
+  });
+
   test('it serializes has one marked for deletion correctly', function(assert) {
     run(() => {
       seedPostWithAuthor();
