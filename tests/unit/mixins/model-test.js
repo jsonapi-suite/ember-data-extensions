@@ -36,6 +36,9 @@ module('Unit | Mixin | model', function(hooks) {
       post.set('markedForDestruction', false);
       post.set('markedForDeletion', true);
       assert.ok(post.get('hasDirtyAttributes'), 'should be true when marked for deletion');
+      post.set('_markedForDeletion', false);
+      post.markManyToOneDeletion('author');
+      assert.ok(post.get('hasDirtyAttributes'), 'should be true when many to one marked for deletion');
     });
   });
 
